@@ -13,6 +13,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.concurrent.ExecutionException;
 
 import com.azure.communication.calling.Call;
 import com.azure.communication.calling.CallAgent;
@@ -76,7 +77,11 @@ public class MainActivity extends AppCompatActivity {
      * Ends the call previously started
      */
     private void endCall() {
-        call.hangup(new HangupOptions());
+        try {
+            call.hangup(new HangupOptions()).get();
+        } catch (ExecutionException | InterruptedException e) {
+            Toast.makeText(this, "Unable to hang up call", Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**
