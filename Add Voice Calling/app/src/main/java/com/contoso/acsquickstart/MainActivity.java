@@ -17,10 +17,10 @@ import java.util.ArrayList;
 import com.azure.communication.calling.Call;
 import com.azure.communication.calling.CallAgent;
 import com.azure.communication.calling.CallClient;
-import com.azure.android.communication.common.CommunicationUser;
+import com.azure.android.communication.common.CommunicationUserIdentifier;
 import com.azure.communication.calling.HangupOptions;
 import com.azure.communication.calling.StartCallOptions;
-import com.azure.android.communication.common.CommunicationUserCredential;
+import com.azure.android.communication.common.CommunicationTokenCredential;
 
 public class MainActivity extends AppCompatActivity {
     private static final String[] allPermissions = new String[] { Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_PHONE_STATE };
@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
         StartCallOptions options = new StartCallOptions();
         call = agent.call(
                 getApplicationContext(),
-                new CommunicationUser[] {new CommunicationUser(calleeId)},
+                new CommunicationUserIdentifier[] {new CommunicationUserIdentifier(calleeId)},
                 options);
         call.addOnCallStateChangedListener(p -> setStatus(call.getState().toString()));
     }
@@ -76,7 +76,11 @@ public class MainActivity extends AppCompatActivity {
      * Ends the call previously started
      */
     private void endCall() {
-        call.hangup(new HangupOptions());
+        try {
+            call.hangUp(new HangUpOptions()).get();
+        } catch (ExecutionException | InterruptedException e) {
+            Toast.makeText(this, "Unable to hang up call", Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**
