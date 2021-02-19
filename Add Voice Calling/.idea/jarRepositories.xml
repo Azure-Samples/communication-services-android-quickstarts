@@ -26,5 +26,10 @@
       <option name="name" value="maven" />
       <option name="url" value="https://skype.pkgs.visualstudio.com/_packaging/tps/maven/v1/" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="MavenRepo" />
+      <option name="name" value="MavenRepo" />
+      <option name="url" value="https://repo.maven.apache.org/maven2/" />
+    </remote-repository>
   </component>
 </project>

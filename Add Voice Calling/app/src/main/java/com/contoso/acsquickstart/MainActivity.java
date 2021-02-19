@@ -14,13 +14,13 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 
+import com.azure.android.communication.common.CommunicationUserIdentifier;
 import com.azure.communication.calling.Call;
 import com.azure.communication.calling.CallAgent;
 import com.azure.communication.calling.CallClient;
-import com.azure.android.communication.common.CommunicationUser;
 import com.azure.communication.calling.HangupOptions;
+import com.azure.android.communication.common.CommunicationTokenCredential;
 import com.azure.communication.calling.StartCallOptions;
-import com.azure.android.communication.common.CommunicationUserCredential;
 
 public class MainActivity extends AppCompatActivity {
     private static final String[] allPermissions = new String[] { Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_PHONE_STATE };
@@ -65,9 +65,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
         StartCallOptions options = new StartCallOptions();
-        call = agent.call(
+        call = agent.startCall(
                 getApplicationContext(),
-                new CommunicationUser[] {new CommunicationUser(calleeId)},
+                new CommunicationUserIdentifier[] {new CommunicationUserIdentifier(calleeId)},
                 options);
         call.addOnCallStateChangedListener(p -> setStatus(call.getState().toString()));
     }
@@ -76,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
      * Ends the call previously started
      */
     private void endCall() {
-        call.hangup(new HangupOptions());
+        call.hangup(new HangupOptions()).get();
     }
 
     /**
@@ -84,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
      */
     private void createAgent() {
         try {
-            CommunicationUserCredential credential = new CommunicationUserCredential(UserToken);
+            CommunicationTokenCredential credential = new CommunicationTokenCredential(UserToken);
             agent = new CallClient().createCallAgent(getApplicationContext(), credential).get();
         } catch (Exception ex) {
             Toast.makeText(getApplicationContext(), "Failed to create call agent.", Toast.LENGTH_SHORT).show();
