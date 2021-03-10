@@ -24,7 +24,7 @@ The following classes and interfaces used in the quickstart handle some of the m
 | ------------------------------------- | ------------------------------------------------------------ |
 | CallClient| The CallClient is the main entry point to the Calling client library.|
 | CallAgent | The CallAgent is used to start and manage calls. |
-| CommunicationUserCredential | The CommunicationUserCredential is used as the token credential to instantiate the CallAgent.|
+| CommunicationTokenCredential  | The CommunicationTokenCredential  is used as the token credential to instantiate the CallAgent.|
 
 ## Before running sample code
 
