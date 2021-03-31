@@ -1,3 +1,12 @@
+---
+page_type: sample
+languages:
+- java
+products:
+- azure
+- azure-communication-services
+---
+
 # Quickstart: Add voice calling to your Android app
 
 For full instructions on how to build this code sample from scratch, look at [Quickstart: Add voice calling to your Android app](https://docs.microsoft.com/en-us/azure/communication-services/quickstarts/voice-video-calling/getting-started-with-calling?pivots=platform-android)
