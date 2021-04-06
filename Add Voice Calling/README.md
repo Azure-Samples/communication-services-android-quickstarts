@@ -1,3 +1,12 @@
+---
+page_type: sample
+languages:
+- java
+products:
+- azure
+- azure-communication-services
+---
+
 # Quickstart: Add voice calling to your Android app
 
 For full instructions on how to build this code sample from scratch, look at [Quickstart: Add voice calling to your Android app](https://docs.microsoft.com/en-us/azure/communication-services/quickstarts/voice-video-calling/getting-started-with-calling?pivots=platform-android)
@@ -24,7 +33,7 @@ The following classes and interfaces used in the quickstart handle some of the m
 | ------------------------------------- | ------------------------------------------------------------ |
 | CallClient| The CallClient is the main entry point to the Calling client library.|
 | CallAgent | The CallAgent is used to start and manage calls. |
-| CommunicationUserCredential | The CommunicationUserCredential is used as the token credential to instantiate the CallAgent.|
+| CommunicationTokenCredential  | The CommunicationTokenCredential  is used as the token credential to instantiate the CallAgent.|
 
 ## Before running sample code
 
@@ -37,6 +46,6 @@ The following classes and interfaces used in the quickstart handle some of the m
 
 Open the sample project using Android Studio and run the application.
 
-![Final look and feel of the quick start app](../Media/quickstart-android-call-echobot.png)
+![Final look and feel of the quick start app](../Media/quickstart-android-call-p2p.png)
 
 You can make an outbound VOIP call by providing a user ID in the text field and tapping the **Call** button. Calling `8:echo123` connects you with an echo bot, this is great for getting started and verifying your audio devices are working.
