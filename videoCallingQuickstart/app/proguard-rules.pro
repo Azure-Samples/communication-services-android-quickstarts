@@ -19,3 +19,9 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+-keep class com.skype.rt.** {*;}
+-keep class com.azure.** {*;}
+-keep class com.skype.android.** {*;}
+-keep class com.microsoft.media.** {*;}
+-keep class com.microsoft.dl.** {*;}
