@@ -13,6 +13,7 @@ import android.widget.LinearLayout;
 import android.content.Context;
 import com.azure.android.communication.calling.CallState;
 import com.azure.android.communication.calling.CallingCommunicationException;
+import com.azure.android.communication.calling.CameraFacing;
 import com.azure.android.communication.calling.PropertyChangedEvent;
 import com.azure.android.communication.calling.VideoDeviceInfo;
 import com.azure.android.communication.common.CommunicationUserIdentifier;
@@ -66,7 +67,6 @@ public class MainActivity extends AppCompatActivity {
 
         handleIncomingCall();
 
-
         Button callButton = findViewById(R.id.call_button);
         callButton.setOnClickListener(l -> startCall());
         Button hangupButton = findViewById(R.id.hang_up);
@@ -92,12 +92,12 @@ public class MainActivity extends AppCompatActivity {
 
     private void createAgent() {
         Context context = this.getApplicationContext();
-        String userToken = "<User_Access_Token>";
+        String userToken = "<USER_ACCESS_TOKEN>";
         try {
             CommunicationTokenCredential credential = new CommunicationTokenCredential(userToken);
             CallClient callClient = new CallClient();
-            callAgent = callClient.createCallAgent(getApplicationContext(), credential).get();
             deviceManager = callClient.getDeviceManager(context).get();
+            callAgent = callClient.createCallAgent(getApplicationContext(), credential).get();
         } catch (Exception ex) {
             Toast.makeText(context, "Failed to create call agent.", Toast.LENGTH_SHORT).show();
         }
@@ -114,16 +114,17 @@ public class MainActivity extends AppCompatActivity {
         EditText calleeIdView = findViewById(R.id.callee_id);
         String calleeId = calleeIdView.getText().toString();
         ArrayList<CommunicationIdentifier> participants = new ArrayList<CommunicationIdentifier>();
-        VideoDeviceInfo camera = deviceManager.getCameras().get(0);
-        currentVideoStream = new LocalVideoStream(camera, context);
-        LocalVideoStream[] videoStreams = new LocalVideoStream[1];
-        videoStreams[0] = currentVideoStream;
-        VideoOptions videoOptions = new VideoOptions(videoStreams);
-
         StartCallOptions options = new StartCallOptions();
-        options.setVideoOptions(videoOptions);
-
-        showPreview(currentVideoStream);
+        List<VideoDeviceInfo> cameras = deviceManager.getCameras();
+        if(!cameras.isEmpty()) {
+            VideoDeviceInfo camera = chooseCamera(cameras);
+            currentVideoStream = new LocalVideoStream(camera, context);
+            LocalVideoStream[] videoStreams = new LocalVideoStream[1];
+            videoStreams[0] = currentVideoStream;
+            VideoOptions videoOptions = new VideoOptions(videoStreams);
+            options.setVideoOptions(videoOptions);
+            showPreview(currentVideoStream);
+        }
         participants.add(new CommunicationUserIdentifier(calleeId));
 
         call = callAgent.startCall(
@@ -135,22 +136,30 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void hangUp() {
-        call.hangUp();
+        try {
+            call.hangUp().get();
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+        }
         if (previewRenderer != null) {
             previewRenderer.dispose();
         }
     }
 
     public void turnOnLocalVideo() {
-        try{
-            VideoDeviceInfo camera = deviceManager.getCameras().get(0);
-            currentVideoStream = new LocalVideoStream(camera, this);
-            showPreview(currentVideoStream);
-            call.startVideo(this, currentVideoStream).get();
-        } catch (CallingCommunicationException acsException) {
-            acsException.printStackTrace();
-        } catch (ExecutionException | InterruptedException e) {
-            e.printStackTrace();
+        List<VideoDeviceInfo> cameras = deviceManager.getCameras();
+        if(!cameras.isEmpty())
+        {
+            try{
+                VideoDeviceInfo cameraToUse = chooseCamera(cameras);
+                currentVideoStream = new LocalVideoStream(cameraToUse, this);
+                showPreview(currentVideoStream);
+                call.startVideo(this, currentVideoStream).get();
+            } catch (CallingCommunicationException acsException) {
+                acsException.printStackTrace();
+            } catch (ExecutionException | InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -167,6 +176,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    VideoDeviceInfo chooseCamera(List<VideoDeviceInfo> cameras) {
+        for (VideoDeviceInfo camera : cameras) {
+            if (camera.getCameraFacing() == CameraFacing.FRONT) {
+                return camera;
+            }
+        }
+        return cameras.get(0);
+    }
+
     private void showPreview(LocalVideoStream stream) {
         // Create renderer
         previewRenderer = new VideoStreamRenderer(stream, this);
@@ -179,7 +197,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void handleCallOnStateChanged(PropertyChangedEvent args) {
         if (call.getState() == CallState.CONNECTED) {
-            handleInitialCallState();
+            handleCallState();
         }
         if (call.getState() == CallState.DISCONNECTED) {
             if (previewRenderer != null) {
@@ -188,23 +206,27 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void handleInitialCallState() {
+    private void handleCallState() {
         LinearLayout participantVideoContainer = findViewById(R.id.remotevideocontainer);
         handleAddedParticipants(call.getRemoteParticipants(),participantVideoContainer);
     }
 
     private void answerIncomingCall() {
         Context context = this.getApplicationContext();
-        if (incomingCall == null){
+        if (incomingCall == null) {
             return;
         }
         AcceptCallOptions acceptCallOptions = new AcceptCallOptions();
-        VideoDeviceInfo camera = deviceManager.getCameras().get(0);
-        LocalVideoStream[] localVideoStreams = new LocalVideoStream[1];
-        localVideoStreams[0] = new LocalVideoStream(camera, context);
-        VideoOptions videoOptions = new VideoOptions(localVideoStreams);
-        acceptCallOptions.setVideoOptions(videoOptions);
-        showPreview(localVideoStreams[0]);
+        List<VideoDeviceInfo> cameras = deviceManager.getCameras();
+        if(!cameras.isEmpty()) {
+            VideoDeviceInfo camera = chooseCamera(cameras);
+            currentVideoStream = new LocalVideoStream(camera, context);
+            LocalVideoStream[] videoStreams = new LocalVideoStream[1];
+            videoStreams[0] = currentVideoStream;
+            VideoOptions videoOptions = new VideoOptions(videoStreams);
+            acceptCallOptions.setVideoOptions(videoOptions);
+            showPreview(currentVideoStream);
+        }
         try {
             call = incomingCall.accept(context, acceptCallOptions).get();
         } catch (InterruptedException e) {
@@ -219,7 +241,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void handleRemoteParticipantsUpdate(ParticipantsUpdatedEvent args) {
         LinearLayout participantVideoContainer = findViewById(R.id.remotevideocontainer);
-        handleAddedParticipants(args.getAddedParticipants(),participantVideoContainer);
+        handleAddedParticipants(args.getAddedParticipants(), participantVideoContainer);
     }
 
     private void handleAddedParticipants(List<RemoteParticipant> participants, LinearLayout participantVideoContainer) {
