@@ -273,11 +273,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onFirstFrameRendered() {
                 String text = data.renderer.getSize().toString();
+                Log.i("MainActivity", "Video rendering at: " + text);
             }
 
             @Override
             public void onRendererFailedToStart() {
-                String text = " Failed to render";
+                String text = "Video failed to render";
+                Log.i("MainActivity", text);
             }
         });
         data.rendererView = data.renderer.createView(new CreateViewOptions(ScalingMode.FIT));
