@@ -148,9 +148,8 @@ public class MainActivity extends AppCompatActivity {
 
     public void turnOnLocalVideo() {
         List<VideoDeviceInfo> cameras = deviceManager.getCameras();
-        if(!cameras.isEmpty())
-        {
-            try{
+        if(!cameras.isEmpty()) {
+            try {
                 VideoDeviceInfo cameraToUse = chooseCamera(cameras);
                 currentVideoStream = new LocalVideoStream(cameraToUse, this);
                 showPreview(currentVideoStream);
@@ -208,7 +207,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void handleCallState() {
         LinearLayout participantVideoContainer = findViewById(R.id.remotevideocontainer);
-        handleAddedParticipants(call.getRemoteParticipants(),participantVideoContainer);
+        handleAddedParticipants(call.getRemoteParticipants(), participantVideoContainer);
     }
 
     private void answerIncomingCall() {
