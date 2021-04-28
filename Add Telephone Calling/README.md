@@ -9,7 +9,7 @@ products:
 
 # Quickstart: Add telephone calling to your Android app
 
-For full instructions on how to build this code sample from scratch, look at [Quickstart: Add telephone calling to your Android app](https://docs.microsoft.com/en-us/azure/communication-services/quickstarts/voice-video-calling/pstn-call?pivots=platform-android)
+For full instructions on how to build this code sample from scratch, look at [Quickstart: Add telephone calling to your Android app](https://docs.microsoft.com/azure/communication-services/quickstarts/voice-video-calling/pstn-call?pivots=platform-android)
 
 ## Prerequisites
 
@@ -17,10 +17,10 @@ To complete this tutorial, you’ll need the following prerequisites:
 
 - An Azure account with an active subscription. [Create an account for free](https://azure.microsoft.com/free/?WT.mc_id=A261C142F). 
 - [Android Studio](https://developer.android.com/studio), for running your Android application.
-- A deployed Communication Services resource. [Create a Communication Services resource](https://docs.microsoft.com/en-us/azure/communication-services/quickstarts/create-communication-resource).
-- A [User Access Token](https://docs.microsoft.com/en-us/azure/communication-services/quickstarts/access-tokens?pivots=programming-language-csharp) for your Azure Communication Service.
-- A phone number acquired in Communication Services resource. [how to get a phone number](https://docs.microsoft.com/en-us/azure/communication-services/quickstarts/telephony-sms/get-phone-number).
-- Complete the quickstart for [getting started with adding calling to your application](https://docs.microsoft.com/en-us/azure/communication-services/quickstarts/voice-video-calling/getting-started-with-calling).
+- A deployed Communication Services resource. [Create a Communication Services resource](https://docs.microsoft.com/azure/communication-services/quickstarts/create-communication-resource).
+- A [User Access Token](https://docs.microsoft.com/azure/communication-services/quickstarts/access-tokens) for your Azure Communication Service.
+- A phone number acquired in Communication Services resource. [how to get a phone number](https://docs.microsoft.com/azure/communication-services/quickstarts/telephony-sms/get-phone-number).
+- Complete the quickstart for [getting started with adding calling to your application](https://docs.microsoft.com/azure/communication-services/quickstarts/voice-video-calling/getting-started-with-calling).
 ## Code Structure
 
 - **./app/src/main/java/com/contoso/acsquickstart/MainActivity.java:** Contains core logic for calling SDK integration.
