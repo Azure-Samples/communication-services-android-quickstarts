@@ -32,7 +32,9 @@ To complete this tutorial, you’ll need the following prerequisites:
 2. `git clone https://github.com/Azure-Samples/Communication-Services-Android-Quickstarts.git` 
 3. With the `endpoint` procured in pre-requisites, add it to the **./app/src/main/java/com/contoso/chatquickstart/MainActivity.java** file. Assign your end point in line 40:
 ```private String endpoint = "https://<resource>.communication.azure.com";```
-4. With the `Communication Services Users` procured in pre-requisites, add it to the **./app/src/main/java/com/contoso/chatquickstart/MainActivity.java** file. Assign your user identities in line 41 and 42:
+4. With the `Communication Services Users` procured in pre-requisites, add it to the **./app/src/main/java/com/contoso/chatquickstart/MainActivity.java** file. Assign your user identities in line 41 and 42: 
+```private String firstUserId = "<first_user_id>";```
+```private String secondUserId = "<second_user_id>";```
 5. With the `Access Token` procured in pre-requisites, add it to the **./app/src/main/java/com/contoso/chatquickstart/MainActivity.java** file. Assign your access token in line 43:
 ```private String firstUserAccessToken = "<first_user_access_token>"```
 
