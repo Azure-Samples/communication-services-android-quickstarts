@@ -30,12 +30,12 @@ To complete this tutorial, you’ll need the following prerequisites:
 
 1. Open an instance of PowerShell, Windows Terminal, Command Prompt or equivalent and navigate to the directory that you'd like to clone the sample to.
 2. `git clone https://github.com/Azure-Samples/Communication-Services-Android-Quickstarts.git` 
-3. With the `endpoint` procured in pre-requisites, add it to the **./app/src/main/java/com/contoso/chatquickstart/MainActivity.java** file. Assign your end point in line 40:
+3. With the `endpoint` procured in pre-requisites, add it to the **./app/src/main/java/com/contoso/chatquickstart/MainActivity.java** file. Assign your end point in line 31:
 ```private String endpoint = "https://<resource>.communication.azure.com";```
-4. With the `Communication Services Users` procured in pre-requisites, add it to the **./app/src/main/java/com/contoso/chatquickstart/MainActivity.java** file. Assign your user identities in line 41 and 42: 
+4. With the `Communication Services Users` procured in pre-requisites, add it to the **./app/src/main/java/com/contoso/chatquickstart/MainActivity.java** file. Assign your user identities in line 32 and 33:
 ```private String firstUserId = "<first_user_id>";```
 ```private String secondUserId = "<second_user_id>";```
-5. With the `Access Token` procured in pre-requisites, add it to the **./app/src/main/java/com/contoso/chatquickstart/MainActivity.java** file. Assign your access token in line 43:
+5. With the `Access Token` procured in pre-requisites, add it to the **./app/src/main/java/com/contoso/chatquickstart/MainActivity.java** file. Assign your access token in line 34:
 ```private String firstUserAccessToken = "<first_user_access_token>"```
 
 ## Run the sample

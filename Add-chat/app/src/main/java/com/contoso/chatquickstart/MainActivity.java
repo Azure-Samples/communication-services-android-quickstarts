@@ -7,27 +7,18 @@ import com.azure.android.communication.chat.*;
 import com.azure.android.communication.chat.models.*;
 import com.azure.android.communication.common.*;
 
-import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 
 import com.jakewharton.threetenabp.AndroidThreeTen;
-import org.threeten.bp.OffsetDateTime;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import com.azure.android.core.credential.AccessToken;
-import com.azure.android.core.http.okhttp.OkHttpAsyncClientProvider;
-import com.azure.android.core.http.policy.BearerTokenAuthenticationPolicy;
 import com.azure.android.core.http.policy.UserAgentPolicy;
 
-import com.azure.android.communication.chat.signaling.chatevents.BaseEvent;
-import com.azure.android.communication.chat.signaling.chatevents.ChatMessageReceivedEvent;
-import com.azure.android.communication.chat.signaling.properties.ChatEventId;
-
-import com.azure.android.core.rest.PagedResponse;
-import com.azure.android.core.util.Context;
+import com.azure.android.core.rest.util.paging.PagedAsyncStream;
+import com.azure.android.core.util.RequestContext;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -43,7 +34,7 @@ public class MainActivity extends AppCompatActivity {
     private String firstUserAccessToken = "<first_user_access_token>";
     private String threadId = "";
     private String chatMessageId = "";
-    private final String sdkVersion = "1.0.0-beta.8";
+    private final String sdkVersion = "1.0.0";
     private static final String APPLICATION_ID = "Chat Quickstart App";
     private static final String SDK_NAME = "azure-communication-com.azure.android.communication.chat";
     private static final String TAG = "Chat Quickstart App";
@@ -51,38 +42,6 @@ public class MainActivity extends AppCompatActivity {
     private void log(String msg) {
         Log.i(TAG, msg);
         Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
-    }
-
-    void listParticipantsNextPage(ChatThreadAsyncClient chatThreadAsyncClient, String continuationToken, int pageNumber) {
-        if (continuationToken != null) {
-            try {
-                PagedResponse<ChatParticipant> nextPageWithResponse = chatThreadAsyncClient.getParticipantsNextPageWithResponse(continuationToken, Context.NONE).get();
-                for (ChatParticipant chatParticipant : nextPageWithResponse.getValue()) {
-                    // You code to handle participant
-                }
-
-                listParticipantsNextPage(chatThreadAsyncClient, nextPageWithResponse.getContinuationToken(), ++pageNumber);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    void listReadReceiptsNextPage(ChatThreadAsyncClient chatThreadAsyncClient, String continuationToken, int pageNumber) {
-        if (continuationToken != null) {
-            try {
-                PagedResponse<ChatMessageReadReceipt> nextPageWithResponse =
-                        chatThreadAsyncClient.getReadReceiptsNextPageWithResponse(continuationToken, Context.NONE).get();
-
-                for (ChatMessageReadReceipt readReceipt : nextPageWithResponse.getValue()) {
-                    // You code to handle readReceipt
-                }
-
-                listParticipantsNextPage(chatThreadAsyncClient, nextPageWithResponse.getContinuationToken(), ++pageNumber);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     @Override
@@ -94,13 +53,10 @@ public class MainActivity extends AppCompatActivity {
             // <CREATE A CHAT CLIENT>
             ChatAsyncClient chatAsyncClient = new ChatClientBuilder()
                     .endpoint(endpoint)
-                    .credentialPolicy(new BearerTokenAuthenticationPolicy((request, callback) ->
-                            callback.onSuccess(new AccessToken(firstUserAccessToken, OffsetDateTime.now().plusDays(1))), "chat"))
+                    .credential(new CommunicationTokenCredential(firstUserAccessToken))
                     .addPolicy(new UserAgentPolicy(APPLICATION_ID, SDK_NAME, sdkVersion))
-                    .httpClient(new OkHttpAsyncClientProvider().createInstance())
-                    .realtimeNotificationParams(getApplicationContext(), firstUserAccessToken)
                     .buildAsyncClient();
-            
+
             // <CREATE A CHAT THREAD>
             // A list of ChatParticipant to start the thread with.
             List<ChatParticipant> participants = new ArrayList<>();
@@ -124,20 +80,15 @@ public class MainActivity extends AppCompatActivity {
                     chatAsyncClient.createChatThread(createChatThreadOptions).get();
             ChatThreadProperties chatThreadProperties = createChatThreadResult.getChatThreadProperties();
             threadId = chatThreadProperties.getId();
-            
-
 
             // <CREATE A CHAT THREAD CLIENT>
 
             ChatThreadAsyncClient chatThreadAsyncClient = new ChatThreadClientBuilder()
                     .endpoint(endpoint)
-                    .credentialPolicy(new BearerTokenAuthenticationPolicy((request, callback) ->
-                            callback.onSuccess(new AccessToken(firstUserAccessToken, OffsetDateTime.now().plusDays(1))), "chat"))
+                    .credential(new CommunicationTokenCredential(firstUserAccessToken))
                     .addPolicy(new UserAgentPolicy(APPLICATION_ID, SDK_NAME, sdkVersion))
-                    .httpClient(new OkHttpAsyncClientProvider().createInstance())
                     .chatThreadId(threadId)
                     .buildAsyncClient();
-
 
             // <SEND A MESSAGE>
             // The chat message content, required.
@@ -155,10 +106,10 @@ public class MainActivity extends AppCompatActivity {
             // <RECEIVE CHAT MESSAGES>
 
             // Start real time notification
-            chatAsyncClient.startRealtimeNotifications();
+            chatAsyncClient.startRealtimeNotifications(firstUserAccessToken, getApplicationContext());
 
             // Register a listener for chatMessageReceived event
-            chatAsyncClient.on(ChatEventId.chatMessageReceived, "chatMessageReceived", (BaseEvent payload) -> {
+            chatAsyncClient.addEventHandler(ChatEventType.CHAT_MESSAGE_RECEIVED, (ChatEvent payload) -> {
                 ChatMessageReceivedEvent chatMessageReceivedEvent = (ChatMessageReceivedEvent) payload;
                 // You code to handle chatMessageReceived event
 
@@ -185,15 +136,12 @@ public class MainActivity extends AppCompatActivity {
                     .setMaxPageSize(maxPageSize)
                     .setSkip(skip);
 
-            PagedResponse<ChatParticipant> getParticipantsFirstPageWithResponse =
-                    chatThreadAsyncClient.getParticipantsFirstPageWithResponse(listParticipantsOptions, Context.NONE).get();
+            PagedAsyncStream<ChatParticipant> participantsPagedAsyncStream =
+                    chatThreadAsyncClient.listParticipants(listParticipantsOptions, RequestContext.NONE);
 
-            for (ChatParticipant chatParticipant : getParticipantsFirstPageWithResponse.getValue()) {
+            participantsPagedAsyncStream.forEach(chatParticipant -> {
                 // You code to handle participant
-            }
-
-            listParticipantsNextPage(chatThreadAsyncClient, getParticipantsFirstPageWithResponse.getContinuationToken(), 2);
-
+            });
 
             // <REMOVE A USER>
             // Using the unique ID of the participant.
@@ -215,14 +163,12 @@ public class MainActivity extends AppCompatActivity {
                     .setMaxPageSize(maxPageSize)
                     .setSkip(skip);
 
-            PagedResponse<ChatMessageReadReceipt> listReadReceiptsFirstPageWithResponse =
-                    chatThreadAsyncClient.getReadReceiptsFirstPageWithResponse(listReadReceiptOptions, Context.NONE).get();
+            PagedAsyncStream<ChatMessageReadReceipt> readReceiptsPagedAsyncStream =
+                    chatThreadAsyncClient.listReadReceipts(listReadReceiptOptions, RequestContext.NONE);
 
-            for (ChatMessageReadReceipt readReceipt : listReadReceiptsFirstPageWithResponse.getValue()) {
+            readReceiptsPagedAsyncStream.forEach(readReceipt -> {
                 // You code to handle readReceipt
-            }
-
-            listReadReceiptsNextPage(chatThreadAsyncClient, listReadReceiptsFirstPageWithResponse.getContinuationToken(), 2);
+            });
             
         } catch (Exception e){
             System.out.println("Quickstart failed: " + e.getMessage());
