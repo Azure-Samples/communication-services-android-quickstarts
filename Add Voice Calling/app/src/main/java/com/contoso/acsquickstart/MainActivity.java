@@ -6,6 +6,7 @@ import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.media.AudioManager;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -47,6 +48,8 @@ public class MainActivity extends AppCompatActivity {
         hangupButton.setOnClickListener(l -> endCall());
 
         statusBar = findViewById(R.id.status_bar);
+        
+        setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
     }
 
     /**
