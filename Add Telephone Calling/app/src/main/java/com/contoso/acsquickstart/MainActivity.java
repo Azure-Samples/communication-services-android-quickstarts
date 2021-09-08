@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
 import com.azure.android.communication.calling.VideoOptions;
+import com.azure.android.communication.common.CommunicationIdentifier;
 import com.azure.android.communication.common.CommunicationUserIdentifier;
 import com.azure.android.communication.calling.Call;
 import com.azure.android.communication.calling.CallAgent;
@@ -55,18 +56,19 @@ public class MainActivity extends AppCompatActivity {
      * Start a call
      */
     private void startCall() {
-       EditText calleePhoneView = findViewById(R.id.callee_id);
+        EditText calleePhoneView = findViewById(R.id.callee_id);
         String calleePhone = calleePhoneView.getText().toString();
         PhoneNumberIdentifier callerPhone = new PhoneNumberIdentifier("ACS Phone number");
         StartCallOptions options = new StartCallOptions();
         options.setAlternateCallerId(callerPhone);
-        options.setVideoOptions(new VideoOptions(null));
+        ArrayList<CommunicationIdentifier> participants = new ArrayList<>();
+        participants.add(new PhoneNumberIdentifier(calleePhone));
         call = agent.startCall(
                 getApplicationContext(),
-                new PhoneNumberIdentifier[] {new PhoneNumberIdentifier(calleePhone)},
+                participants,
                 options);
-		call.addOnStateChangedListener(p -> setStatus(call.getState().toString()));
-    }
+        call.addOnStateChangedListener(p -> setStatus(call.getState().toString()));
+     }
 
     /**
      * Ends the call previously started

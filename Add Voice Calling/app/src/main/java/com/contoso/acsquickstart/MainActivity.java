@@ -16,6 +16,7 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
+import com.azure.android.communication.common.CommunicationIdentifier;
 import com.azure.android.communication.common.CommunicationUserIdentifier;
 import com.azure.android.communication.calling.Call;
 import com.azure.android.communication.calling.CallAgent;
@@ -67,11 +68,12 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Please enter callee", Toast.LENGTH_SHORT).show();
             return;
         }
-
+        ArrayList<CommunicationIdentifier> participants = new ArrayList<>();
+        participants.add(new CommunicationUserIdentifier(calleeId));
         StartCallOptions options = new StartCallOptions();
         call = agent.startCall(
                 getApplicationContext(),
-                new CommunicationUserIdentifier[] {new CommunicationUserIdentifier(calleeId)},
+                participants,
                 options);
         call.addOnStateChangedListener(p -> setStatus(call.getState().toString()));
     }
