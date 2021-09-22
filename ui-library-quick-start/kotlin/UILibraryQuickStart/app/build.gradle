@@ -1,0 +1,51 @@
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+}
+
+android {
+    compileSdk 30
+
+    defaultConfig {
+        applicationId "com.example.uilibraryquickstart"
+        minSdk 30
+        targetSdk 30
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    packagingOptions {
+        pickFirst  'META-INF/*'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+}
+
+dependencies {
+    implementation(name: "CallingComposite-release", ext: 'aar')
+    implementation 'com.azure.android:azure-communication-calling:1.2.0-beta.2'
+    implementation 'com.microsoft.fluentui:fluentui_others:0.0.8'
+    implementation 'com.microsoft.fluentui:fluentui_persona:0.0.8'
+    implementation "com.microsoft.device:dualscreen-layout:1.0.0-alpha01"
+    implementation "androidx.fragment:fragment-ktx:1.3.6"
+    implementation 'androidx.core:core-ktx:1.6.0'
+    implementation 'androidx.appcompat:appcompat:1.3.1'
+    implementation 'com.google.android.material:material:1.4.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.0'
+    testImplementation 'junit:junit:4.+'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+}
