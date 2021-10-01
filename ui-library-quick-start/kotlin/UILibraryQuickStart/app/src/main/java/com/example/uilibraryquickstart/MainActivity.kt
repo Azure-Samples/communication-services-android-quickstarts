@@ -6,7 +6,7 @@ import android.view.View
 import android.widget.Button
 import com.azure.android.communication.common.CommunicationTokenCredential
 import com.azure.android.communication.common.CommunicationTokenRefreshOptions
-import com.azure.android.communication.toolkit.ACSCallingCompositeBuilder
+import com.azure.android.communication.toolkit.CallingCompositeBuilder
 import com.azure.android.communication.toolkit.CallingComposite
 import com.azure.android.communication.toolkit.GroupCallParameters
 import java.util.UUID
@@ -22,7 +22,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startCallingComposite() {
-        val callingComposite: CallingComposite = ACSCallingCompositeBuilder().build()
+        val callingComposite: CallingComposite = CallingCompositeBuilder().build()
         val communicationTokenRefreshOptions = CommunicationTokenRefreshOptions(
             { fetchToken() }, true)
         val communicationTokenCredential =

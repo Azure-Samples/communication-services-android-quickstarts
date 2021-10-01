@@ -5,7 +5,7 @@ import android.os.Bundle;
 import android.widget.Button;
 import com.azure.android.communication.common.CommunicationTokenCredential;
 import com.azure.android.communication.common.CommunicationTokenRefreshOptions;
-import com.azure.android.communication.toolkit.ACSCallingCompositeBuilder;
+import com.azure.android.communication.toolkit.CallingCompositeBuilder;
 import com.azure.android.communication.toolkit.CallingComposite;
 import com.azure.android.communication.toolkit.GroupCallParameters;
 import java.util.UUID;
@@ -25,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startCallingComposite() {
-        CallingComposite callingComposite = new ACSCallingCompositeBuilder().build();
+        CallingComposite callingComposite = new CallingCompositeBuilder().build();
 
         CommunicationTokenRefreshOptions communicationTokenRefreshOptions =
                 new CommunicationTokenRefreshOptions(this::fetchToken, true);

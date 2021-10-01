@@ -35,12 +35,7 @@ android {
 }
 
 dependencies {
-    implementation(name: "CallingComposite-release", ext: 'aar')
-    implementation 'com.azure.android:azure-communication-calling:1.2.0-beta.2'
-    implementation 'com.microsoft.fluentui:fluentui_others:0.0.8'
-    implementation 'com.microsoft.fluentui:fluentui_persona:0.0.8'
-    implementation "com.microsoft.device:dualscreen-layout:1.0.0-alpha01"
-    implementation "androidx.fragment:fragment-ktx:1.3.6"
+    implementation 'com.azure.android:azure-communication-calling-ui-library:1.0.0-alpha.0'
     implementation 'androidx.core:core-ktx:1.6.0'
     implementation 'androidx.appcompat:appcompat:1.3.1'
     implementation 'com.google.android.material:material:1.4.0'
