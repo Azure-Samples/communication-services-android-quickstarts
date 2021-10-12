@@ -5,7 +5,7 @@ dependencyResolutionManagement {
         mavenCentral()
         maven {
             name='github'
-            url="https://maven.pkg.github.com/Azure/communication-ui-toolkit-android-pr"
+            url = 'https://maven.pkg.github.com/{repository owner}/{repository}'
             credentials {
                 username '<you user name>'
                 password '<you personal access token>'

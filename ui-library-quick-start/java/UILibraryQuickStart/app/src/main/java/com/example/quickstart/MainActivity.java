@@ -1,13 +1,16 @@
 package com.example.quickstart;
 
 import androidx.appcompat.app.AppCompatActivity;
+
 import android.os.Bundle;
 import android.widget.Button;
+
 import com.azure.android.communication.common.CommunicationTokenCredential;
 import com.azure.android.communication.common.CommunicationTokenRefreshOptions;
-import com.azure.android.communication.toolkit.CallingCompositeBuilder;
-import com.azure.android.communication.toolkit.CallingComposite;
-import com.azure.android.communication.toolkit.GroupCallParameters;
+import com.azure.android.communication.toolkit.CallCompositeBuilder;
+import com.azure.android.communication.toolkit.CallComposite;
+import com.azure.android.communication.toolkit.GroupCallOptions;
+
 import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
@@ -17,26 +20,26 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Button startCallingCompositeButton = findViewById(R.id.startUILibraryButton);
+        Button startCallCompositeButton = findViewById(R.id.startUILibraryButton);
 
-        startCallingCompositeButton.setOnClickListener(l -> {
-            startCallingComposite();
+        startCallCompositeButton.setOnClickListener(l -> {
+            startCallComposite();
         });
     }
 
-    private void startCallingComposite() {
-        CallingComposite callingComposite = new CallingCompositeBuilder().build();
+    private void startCallComposite() {
+        CallComposite callComposite = new CallCompositeBuilder().build();
 
         CommunicationTokenRefreshOptions communicationTokenRefreshOptions =
                 new CommunicationTokenRefreshOptions(this::fetchToken, true);
         CommunicationTokenCredential communicationTokenCredential = new CommunicationTokenCredential(communicationTokenRefreshOptions);
 
-        GroupCallParameters parameters = new GroupCallParameters(this,
+        GroupCallOptions options = new GroupCallOptions(this,
                 communicationTokenCredential,
                 "DISPLAY_NAME",
                 UUID.fromString("GROUP_CALL_ID"));
 
-        callingComposite.startExperience(parameters);
+        callComposite.launch(options);
     }
 
     private String fetchToken() {
