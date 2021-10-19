@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity() {
         callComposite.launch(options)
     }
 
-    private fun fetchToken(): String? {
+    private fun fetchToken(): String {
         return "USER_ACCESS_TOKEN"
     }
 }
