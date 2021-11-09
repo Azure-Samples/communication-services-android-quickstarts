@@ -10,6 +10,7 @@ import com.azure.android.communication.common.CommunicationTokenRefreshOptions;
 import com.azure.android.communication.ui.CallCompositeBuilder;
 import com.azure.android.communication.ui.CallComposite;
 import com.azure.android.communication.ui.GroupCallOptions;
+import com.azure.android.communication.ui.TeamsMeetingOptions;
 
 import java.util.UUID;
 
@@ -36,8 +37,15 @@ public class MainActivity extends AppCompatActivity {
 
         GroupCallOptions options = new GroupCallOptions(this,
                 communicationTokenCredential,
-                "DISPLAY_NAME",
-                UUID.fromString("GROUP_CALL_ID"));
+                UUID.fromString("GROUP_CALL_ID"),
+                "DISPLAY_NAME");
+
+        /* TeamsMeetingOptions options = new TeamsMeetingOptions(
+                this,
+                communicationTokenCredential,
+                "TEAMS_MEETING_LINK",
+                "DISPLAY_NAME"
+        );*/
 
         callComposite.launch(options);
     }

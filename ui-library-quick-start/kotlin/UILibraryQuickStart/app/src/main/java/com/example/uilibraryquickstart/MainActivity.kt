@@ -26,14 +26,14 @@ class MainActivity : AppCompatActivity() {
         val options = GroupCallOptions(
             this,
             communicationTokenCredential,
+            UUID.fromString("GROUP_CALL_ID"),
             "DISPLAY_NAME",
-            UUID.fromString("GROUP_CALL_ID")
         )
         /*val options = TeamsMeetingOptions(
             this,
             communicationTokenCredential,
+            "TEAMS_MEETING_LINK",
             "DISPLAY_NAME",
-           "TEAMS_MEETING_LINK"
         )*/
         val callComposite: CallComposite = CallCompositeBuilder().build()
         callComposite.launch(options)
