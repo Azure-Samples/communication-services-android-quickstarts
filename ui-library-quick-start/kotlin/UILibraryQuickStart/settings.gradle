@@ -6,14 +6,6 @@ dependencyResolutionManagement {
         maven {
             url "https://pkgs.dev.azure.com/MicrosoftDeviceSDK/DuoSDK-Public/_packaging/Duo-SDK-Feed/maven/v1"
         }
-        maven {
-            name='github'
-            url = 'https://maven.pkg.github.com/Azure/communication-preview'
-            credentials {
-                username '<you user name>'
-                password '<you personal access token>'
-            }
-        }
     }
 }
 rootProject.name = "UILibraryQuickStart"
