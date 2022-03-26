@@ -18,7 +18,9 @@ import android.widget.LinearLayout;
 import android.content.Context;
 import com.azure.android.communication.calling.CallState;
 import com.azure.android.communication.calling.CallingCommunicationException;
+import com.azure.android.communication.calling.ParticipantsUpdatedListener;
 import com.azure.android.communication.calling.PropertyChangedEvent;
+import com.azure.android.communication.calling.PropertyChangedListener;
 import com.azure.android.communication.calling.StartCallOptions;
 import com.azure.android.communication.calling.VideoDeviceInfo;
 import com.azure.android.communication.common.CommunicationIdentifier;
@@ -65,6 +67,8 @@ public class MainActivity extends AppCompatActivity {
     VideoStreamRendererView preview;
     final Map<Integer, StreamData> streamData = new HashMap<>();
     private boolean renderRemoteVideo = true;
+    private ParticipantsUpdatedListener remoteParticipantUpdatedListener;
+    private PropertyChangedListener onStateChangedListener;
 
     final HashSet<String> joinedParticipants = new HashSet<>();
 
@@ -152,8 +156,11 @@ public class MainActivity extends AppCompatActivity {
                 context,
                 participants,
                 options);
-        call.addOnRemoteParticipantsUpdatedListener(this::handleRemoteParticipantsUpdate);
-        call.addOnStateChangedListener(this::handleCallOnStateChanged);
+
+        remoteParticipantUpdatedListener = this::handleRemoteParticipantsUpdate;
+        onStateChangedListener = this::handleCallOnStateChanged;
+        call.addOnRemoteParticipantsUpdatedListener(remoteParticipantUpdatedListener);
+        call.addOnStateChangedListener(onStateChangedListener);
     }
 
     private void hangUp() {
@@ -286,8 +293,10 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        call.addOnRemoteParticipantsUpdatedListener(this::handleRemoteParticipantsUpdate);
-        call.addOnStateChangedListener(this::handleCallOnStateChanged);
+        remoteParticipantUpdatedListener = this::handleRemoteParticipantsUpdate;
+        onStateChangedListener = this::handleCallOnStateChanged;
+        call.addOnRemoteParticipantsUpdatedListener(remoteParticipantUpdatedListener);
+        call.addOnStateChangedListener(onStateChangedListener);
     }
 
     public void handleRemoteParticipantsUpdate(ParticipantsUpdatedEvent args) {
