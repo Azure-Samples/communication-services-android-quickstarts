@@ -16,7 +16,7 @@
             android:layout_height="wrap_content"
             android:ems="10"
             android:gravity="center"
-            android:hint="Call ID"
+            android:hint="Callee ID"
             android:inputType="textPersonName"
             app:layout_constraintBottom_toTopOf="@+id/call_button"
             app:layout_constraintEnd_toEndOf="parent"

@@ -110,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void createAgent() {
         Context context = this.getApplicationContext();
-        String userToken = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjEwNCIsIng1dCI6IlJDM0NPdTV6UENIWlVKaVBlclM0SUl4Szh3ZyIsInR5cCI6IkpXVCJ9.eyJza3lwZWlkIjoiYWNzOmI2YWFkYTFmLTBiMWQtNDdhYy04NjZmLTkxYWFlMDBhMWQwMV8wMDAwMDAxMC0xNTM3LTE2ZWEtMGUwNC0zNDNhMGQwMDE4MzUiLCJzY3AiOjE3OTIsImNzaSI6IjE2NDgxNzk2MzkiLCJleHAiOjE2NDgyNjYwMzksImFjc1Njb3BlIjoidm9pcCIsInJlc291cmNlSWQiOiJiNmFhZGExZi0wYjFkLTQ3YWMtODY2Zi05MWFhZTAwYTFkMDEiLCJpYXQiOjE2NDgxNzk2Mzl9.mk8wQ9L9g6HDGh4H-_w35bUKmjM6qE5Lr578vCCKFlDpW2n7Nn4yQUW-KJqMmFkzlyNP4x3SGTSEE4RFYLS-tcQAbhz9WqrHGoaEXEWrxZJGTuVYsEkMPRmUgnYh4gWeFMDqdP3U3qE9NY6VmVxgneTuPg9dgj0GxWXWjdm168aDXrl7wGQj9C_gmnL2QaDeydcJt0CTKffhvP7UW5yq6jChYIfUZ2Qd6pSq5kjPNDRa7CWTI3RdVMMud0Sqf1H62fuH8z84rT-4PAQThOfOFGXHGSNGXgYYMyCgEk-eoiPN3gSs8aZ7xy4fcu6j5gQxmThXBsWf5YC_HWOWgYEx1w";
+        String userToken = "<User_Access_Token>";
         try {
             CommunicationTokenCredential credential = new CommunicationTokenCredential(userToken);
             CallClient callClient = new CallClient();
@@ -119,12 +119,6 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception ex) {
             Toast.makeText(context, "Failed to create call agent.", Toast.LENGTH_SHORT).show();
         }
-    }
-    private void handleIncomingCall() {
-        callAgent.addOnIncomingCallListener((incomingCall) -> {
-            this.incomingCall = incomingCall;
-            Executors.newCachedThreadPool().submit(this::answerIncomingCall);
-        });
     }
 
     private void startCall() {
@@ -213,21 +207,11 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void handleCallOnStateChanged(PropertyChangedEvent args) {
-        if (call.getState() == CallState.CONNECTED) {
-            runOnUiThread(() -> Toast.makeText(this, "Call is CONNECTED", Toast.LENGTH_SHORT).show());
-            handleCallState();
-        }
-        if (call.getState() == CallState.DISCONNECTED) {
-            runOnUiThread(() -> Toast.makeText(this, "Call is DISCONNECTED", Toast.LENGTH_SHORT).show());
-            if (previewRenderer != null) {
-                previewRenderer.dispose();
-            }
-        }
-    }
-
-    private void handleCallState() {
-        handleAddedParticipants(call.getRemoteParticipants());
+    private void handleIncomingCall() {
+        callAgent.addOnIncomingCallListener((incomingCall) -> {
+            this.incomingCall = incomingCall;
+            Executors.newCachedThreadPool().submit(this::answerIncomingCall);
+        });
     }
 
     private void answerIncomingCall() {
@@ -258,6 +242,38 @@ public class MainActivity extends AppCompatActivity {
         call.addOnStateChangedListener(this::handleCallOnStateChanged);
     }
 
+    private void handleCallOnStateChanged(PropertyChangedEvent args) {
+        if (call.getState() == CallState.CONNECTED) {
+            runOnUiThread(() -> Toast.makeText(this, "Call is CONNECTED", Toast.LENGTH_SHORT).show());
+            handleCallState();
+        }
+        if (call.getState() == CallState.DISCONNECTED) {
+            runOnUiThread(() -> Toast.makeText(this, "Call is DISCONNECTED", Toast.LENGTH_SHORT).show());
+            if (previewRenderer != null) {
+                previewRenderer.dispose();
+            }
+            switchSourceButton.setVisibility(View.INVISIBLE);
+        }
+    }
+
+    private void handleCallState() {
+        handleAddedParticipants(call.getRemoteParticipants());
+    }
+
+    private void videoStreamsUpdated(RemoteVideoStreamsEvent videoStreamsEventArgs) {
+        for(RemoteVideoStream stream : videoStreamsEventArgs.getAddedRemoteVideoStreams()) {
+            StreamData data = new StreamData(stream, null, null);
+            streamData.put(stream.getId(), data);
+            if (renderRemoteVideo) {
+                startRenderingVideo(data);
+            }
+        }
+
+        for(RemoteVideoStream stream : videoStreamsEventArgs.getRemovedRemoteVideoStreams()) {
+            stopRenderingVideo(stream);
+        }
+    }
+
     public void handleRemoteParticipantsUpdate(ParticipantsUpdatedEvent args) {
         handleAddedParticipants(args.getAddedParticipants());
         handleRemovedParticipants(args.getRemovedParticipants());
@@ -280,17 +296,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void videoStreamsUpdated(RemoteVideoStreamsEvent videoStreamsEventArgs) {
-        for(RemoteVideoStream stream : videoStreamsEventArgs.getAddedRemoteVideoStreams()) {
-            StreamData data = new StreamData(stream, null, null);
-            streamData.put(stream.getId(), data);
-            if (renderRemoteVideo) {
-                startRenderingVideo(data);
+    private void handleRemovedParticipants(List<RemoteParticipant> removedParticipants) {
+        for (RemoteParticipant remoteParticipant : removedParticipants) {
+            if(joinedParticipants.contains(getId(remoteParticipant))) {
+                joinedParticipants.remove(getId(remoteParticipant));
             }
-        }
-
-        for(RemoteVideoStream stream : videoStreamsEventArgs.getRemovedRemoteVideoStreams()) {
-            stopRenderingVideo(stream);
         }
     }
 
@@ -343,14 +353,6 @@ public class MainActivity extends AppCompatActivity {
         // Dispose renderer
         data.renderer.dispose();
         data.renderer = null;
-    }
-
-    private void handleRemovedParticipants(List<RemoteParticipant> removedParticipants) {
-        for (RemoteParticipant remoteParticipant : removedParticipants) {
-            if(joinedParticipants.contains(getId(remoteParticipant))) {
-                joinedParticipants.remove(getId(remoteParticipant));
-            }
-        }
     }
 
     public String getId(final RemoteParticipant remoteParticipant) {
