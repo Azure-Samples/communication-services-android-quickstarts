@@ -121,6 +121,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void handleIncomingCall() {
+        callAgent.addOnIncomingCallListener((incomingCall) -> {
+            this.incomingCall = incomingCall;
+            Executors.newCachedThreadPool().submit(this::answerIncomingCall);
+        });
+    }
+
     private void startCall() {
         Context context = this.getApplicationContext();
         EditText callIdView = findViewById(R.id.call_id);
@@ -207,11 +214,22 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void handleIncomingCall() {
-        callAgent.addOnIncomingCallListener((incomingCall) -> {
-            this.incomingCall = incomingCall;
-            Executors.newCachedThreadPool().submit(this::answerIncomingCall);
-        });
+    private void handleCallOnStateChanged(PropertyChangedEvent args) {
+        if (call.getState() == CallState.CONNECTED) {
+            runOnUiThread(() -> Toast.makeText(this, "Call is CONNECTED", Toast.LENGTH_SHORT).show());
+            handleCallState();
+        }
+        if (call.getState() == CallState.DISCONNECTED) {
+            runOnUiThread(() -> Toast.makeText(this, "Call is DISCONNECTED", Toast.LENGTH_SHORT).show());
+            if (previewRenderer != null) {
+                previewRenderer.dispose();
+            }
+            switchSourceButton.setVisibility(View.INVISIBLE);
+        }
+    }
+
+    private void handleCallState() {
+        handleAddedParticipants(call.getRemoteParticipants());
     }
 
     private void answerIncomingCall() {
@@ -242,38 +260,6 @@ public class MainActivity extends AppCompatActivity {
         call.addOnStateChangedListener(this::handleCallOnStateChanged);
     }
 
-    private void handleCallOnStateChanged(PropertyChangedEvent args) {
-        if (call.getState() == CallState.CONNECTED) {
-            runOnUiThread(() -> Toast.makeText(this, "Call is CONNECTED", Toast.LENGTH_SHORT).show());
-            handleCallState();
-        }
-        if (call.getState() == CallState.DISCONNECTED) {
-            runOnUiThread(() -> Toast.makeText(this, "Call is DISCONNECTED", Toast.LENGTH_SHORT).show());
-            if (previewRenderer != null) {
-                previewRenderer.dispose();
-            }
-            switchSourceButton.setVisibility(View.INVISIBLE);
-        }
-    }
-
-    private void handleCallState() {
-        handleAddedParticipants(call.getRemoteParticipants());
-    }
-
-    private void videoStreamsUpdated(RemoteVideoStreamsEvent videoStreamsEventArgs) {
-        for(RemoteVideoStream stream : videoStreamsEventArgs.getAddedRemoteVideoStreams()) {
-            StreamData data = new StreamData(stream, null, null);
-            streamData.put(stream.getId(), data);
-            if (renderRemoteVideo) {
-                startRenderingVideo(data);
-            }
-        }
-
-        for(RemoteVideoStream stream : videoStreamsEventArgs.getRemovedRemoteVideoStreams()) {
-            stopRenderingVideo(stream);
-        }
-    }
-
     public void handleRemoteParticipantsUpdate(ParticipantsUpdatedEvent args) {
         handleAddedParticipants(args.getAddedParticipants());
         handleRemovedParticipants(args.getRemovedParticipants());
@@ -301,6 +287,20 @@ public class MainActivity extends AppCompatActivity {
             if(joinedParticipants.contains(getId(remoteParticipant))) {
                 joinedParticipants.remove(getId(remoteParticipant));
             }
+        }
+    }
+
+    private void videoStreamsUpdated(RemoteVideoStreamsEvent videoStreamsEventArgs) {
+        for(RemoteVideoStream stream : videoStreamsEventArgs.getAddedRemoteVideoStreams()) {
+            StreamData data = new StreamData(stream, null, null);
+            streamData.put(stream.getId(), data);
+            if (renderRemoteVideo) {
+                startRenderingVideo(data);
+            }
+        }
+
+        for(RemoteVideoStream stream : videoStreamsEventArgs.getRemovedRemoteVideoStreams()) {
+            stopRenderingVideo(stream);
         }
     }
 
