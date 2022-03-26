@@ -10,6 +10,24 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
+        <RadioGroup
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <RadioButton
+                android:id="@+id/one_to_one_call"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="One to one call" />
+
+            <RadioButton
+                android:id="@+id/group_call"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Group call" />
+
+        </RadioGroup>
+
         <EditText
             android:id="@+id/call_id"
             android:layout_width="match_parent"

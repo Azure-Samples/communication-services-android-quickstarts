@@ -13,11 +13,14 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.GridLayout;
+import android.widget.RadioButton;
 import android.widget.Toast;
 import android.widget.LinearLayout;
 import android.content.Context;
 import com.azure.android.communication.calling.CallState;
 import com.azure.android.communication.calling.CallingCommunicationException;
+import com.azure.android.communication.calling.GroupCallLocator;
+import com.azure.android.communication.calling.JoinCallOptions;
 import com.azure.android.communication.calling.ParticipantsUpdatedListener;
 import com.azure.android.communication.calling.PropertyChangedEvent;
 import com.azure.android.communication.calling.PropertyChangedListener;
@@ -52,6 +55,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
@@ -73,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
     final HashSet<String> joinedParticipants = new HashSet<>();
 
     Button switchSourceButton;
+    RadioButton oneToOneCall, groupCall;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,6 +102,13 @@ public class MainActivity extends AppCompatActivity {
         switchSourceButton.setOnClickListener(l -> switchSource());
 
         setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
+
+        oneToOneCall = findViewById(R.id.one_to_one_call);
+        oneToOneCall.setOnClickListener(this::onCallTypeSelected);
+        oneToOneCall.setChecked(true);
+        groupCall = findViewById(R.id.group_call);
+        groupCall.setOnClickListener(this::onCallTypeSelected);
+
     }
 
     private void getAllPermissions() {
@@ -114,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void createAgent() {
         Context context = this.getApplicationContext();
-        String userToken = "<USER_ACCESS_TOKEN>";
+        String userToken = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjEwNCIsIng1dCI6IlJDM0NPdTV6UENIWlVKaVBlclM0SUl4Szh3ZyIsInR5cCI6IkpXVCJ9.eyJza3lwZWlkIjoiYWNzOmI2YWFkYTFmLTBiMWQtNDdhYy04NjZmLTkxYWFlMDBhMWQwMV8wMDAwMDAxMC0xNTM3LTE2ZWEtMGUwNC0zNDNhMGQwMDE4MzUiLCJzY3AiOjE3OTIsImNzaSI6IjE2NDgyOTkwOTgiLCJleHAiOjE2NDgzODU0OTgsImFjc1Njb3BlIjoidm9pcCIsInJlc291cmNlSWQiOiJiNmFhZGExZi0wYjFkLTQ3YWMtODY2Zi05MWFhZTAwYTFkMDEiLCJpYXQiOjE2NDgyOTkwOTh9.SLLINx1Vlw2oI1otZKlx-6dmScZRHvC4RDiGo_CGSBH71RK8fv60BbeqnHLUNLEuRYih47OxgcTaLCum82Ygl8XndwecMLJRo3yThqJsBymZVYe066Dh0QfJAna4xOWr39ks3x-IBabN0F3zgrbXPXwCw3GFRpmSlv-A1BOpvHLKsKcAIMlw96JU3Cw54aPRGxUmGGecwKchCMjwFaPq8rmH0dOjB0WeZXtSyscWqj5o7cnU2Pl9s3F3zcYtScdjTGaLMlhHjlOo8mzmQSsNDLMgzx2apRhDDpWct0-JzXAtQyDsjoOGH2Kg6P_acaW8CVqjs5eSBvBP8urKSZEqpg";
         try {
             CommunicationTokenCredential credential = new CommunicationTokenCredential(userToken);
             CallClient callClient = new CallClient();
@@ -140,22 +152,45 @@ public class MainActivity extends AppCompatActivity {
         List<VideoDeviceInfo> cameras = deviceManager.getCameras();
 
 
-        StartCallOptions options = new StartCallOptions();
-        if(!cameras.isEmpty()) {
-            currentCamera = getNextAvailableCamera(null);
-            currentVideoStream = new LocalVideoStream(currentCamera, context);
-            LocalVideoStream[] videoStreams = new LocalVideoStream[1];
-            videoStreams[0] = currentVideoStream;
-            VideoOptions videoOptions = new VideoOptions(videoStreams);
-            options.setVideoOptions(videoOptions);
-            showPreview(currentVideoStream);
-        }
-        participants.add(new CommunicationUserIdentifier(callId));
+        if(oneToOneCall.isChecked()){
+            StartCallOptions options = new StartCallOptions();
+            if(!cameras.isEmpty()) {
+                currentCamera = getNextAvailableCamera(null);
+                currentVideoStream = new LocalVideoStream(currentCamera, context);
+                LocalVideoStream[] videoStreams = new LocalVideoStream[1];
+                videoStreams[0] = currentVideoStream;
+                VideoOptions videoOptions = new VideoOptions(videoStreams);
+                options.setVideoOptions(videoOptions);
+                showPreview(currentVideoStream);
+            }
+            participants.add(new CommunicationUserIdentifier(callId));
 
-        call = callAgent.startCall(
-                context,
-                participants,
-                options);
+            call = callAgent.startCall(
+                    context,
+                    participants,
+                    options);
+        }
+        else{
+
+            JoinCallOptions options = new JoinCallOptions();
+            if(!cameras.isEmpty()) {
+                currentCamera = getNextAvailableCamera(null);
+                currentVideoStream = new LocalVideoStream(currentCamera, context);
+                LocalVideoStream[] videoStreams = new LocalVideoStream[1];
+                videoStreams[0] = currentVideoStream;
+                VideoOptions videoOptions = new VideoOptions(videoStreams);
+                options.setVideoOptions(videoOptions);
+                showPreview(currentVideoStream);
+            }
+            GroupCallLocator groupCallLocator = new GroupCallLocator(UUID.fromString(callId));
+
+            call = callAgent.join(
+                    context,
+                    groupCallLocator,
+                    options);
+        }
+
+
 
         remoteParticipantUpdatedListener = this::handleRemoteParticipantsUpdate;
         onStateChangedListener = this::handleCallOnStateChanged;
@@ -415,6 +450,24 @@ public class MainActivity extends AppCompatActivity {
             this.stream = stream;
             this.renderer = renderer;
             this.rendererView = rendererView;
+        }
+    }
+
+    public void onCallTypeSelected(View view) {
+        boolean checked = ((RadioButton) view).isChecked();
+        EditText callIdView = findViewById(R.id.call_id);
+
+        switch(view.getId()) {
+            case R.id.one_to_one_call:
+                if (checked){
+                    callIdView.setHint("Callee id");
+                }
+                break;
+            case R.id.group_call:
+                if (checked){
+                    callIdView.setHint("Group Call GUID");
+                }
+                break;
         }
     }
 }
