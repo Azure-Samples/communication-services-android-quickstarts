@@ -202,6 +202,23 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private VideoDeviceInfo getNextAvailableCamera(VideoDeviceInfo camera) {
+        List<VideoDeviceInfo> cameras = deviceManager.getCameras();
+        int currentIndex = 0;
+        if (camera == null) {
+            return cameras.isEmpty() ? null : cameras.get(0);
+        }
+
+        for (int i = 0; i < cameras.size(); i++) {
+            if (camera.getId().equals(cameras.get(i).getId())) {
+                currentIndex = i;
+                break;
+            }
+        }
+        int newIndex = (currentIndex + 1) % cameras.size();
+        return cameras.get(newIndex);
+    }
+
     private void showPreview(LocalVideoStream stream) {
         // Create renderer
         previewRenderer = new VideoStreamRenderer(stream, this);
@@ -212,6 +229,19 @@ public class MainActivity extends AppCompatActivity {
             layout.addView(preview);
             switchSourceButton.setVisibility(View.VISIBLE);
         });
+    }
+
+    public void switchSource() {
+        if (currentVideoStream != null) {
+            try {
+                currentCamera = getNextAvailableCamera(currentCamera);
+                currentVideoStream.switchSource(currentCamera).get();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void handleCallOnStateChanged(PropertyChangedEvent args) {
@@ -279,6 +309,19 @@ public class MainActivity extends AppCompatActivity {
                 }
                 remoteParticipant.addOnVideoStreamsUpdatedListener(videoStreamsEventArgs -> videoStreamsUpdated(videoStreamsEventArgs));
             }
+        }
+    }
+
+    public String getId(final RemoteParticipant remoteParticipant) {
+        final CommunicationIdentifier identifier = remoteParticipant.getIdentifier();
+        if (identifier instanceof PhoneNumberIdentifier) {
+            return ((PhoneNumberIdentifier) identifier).getPhoneNumber();
+        } else if (identifier instanceof MicrosoftTeamsUserIdentifier) {
+            return ((MicrosoftTeamsUserIdentifier) identifier).getUserId();
+        } else if (identifier instanceof CommunicationUserIdentifier) {
+            return ((CommunicationUserIdentifier) identifier).getId();
+        } else {
+            return ((UnknownIdentifier) identifier).getId();
         }
     }
 
@@ -353,49 +396,6 @@ public class MainActivity extends AppCompatActivity {
         // Dispose renderer
         data.renderer.dispose();
         data.renderer = null;
-    }
-
-    public String getId(final RemoteParticipant remoteParticipant) {
-        final CommunicationIdentifier identifier = remoteParticipant.getIdentifier();
-        if (identifier instanceof PhoneNumberIdentifier) {
-            return ((PhoneNumberIdentifier) identifier).getPhoneNumber();
-        } else if (identifier instanceof MicrosoftTeamsUserIdentifier) {
-            return ((MicrosoftTeamsUserIdentifier) identifier).getUserId();
-        } else if (identifier instanceof CommunicationUserIdentifier) {
-            return ((CommunicationUserIdentifier) identifier).getId();
-        } else {
-            return ((UnknownIdentifier) identifier).getId();
-        }
-    }
-
-    public void switchSource() {
-        if (currentVideoStream != null) {
-            try {
-                currentCamera = getNextAvailableCamera(currentCamera);
-                currentVideoStream.switchSource(currentCamera).get();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private VideoDeviceInfo getNextAvailableCamera(VideoDeviceInfo camera) {
-        List<VideoDeviceInfo> cameras = deviceManager.getCameras();
-        int currentIndex = 0;
-        if (camera == null) {
-            return cameras.isEmpty() ? null : cameras.get(0);
-        }
-
-        for (int i = 0; i < cameras.size(); i++) {
-            if (camera.getId().equals(cameras.get(i).getId())) {
-                currentIndex = i;
-                break;
-            }
-        }
-        int newIndex = (currentIndex + 1) % cameras.size();
-        return cameras.get(newIndex);
     }
 
     static class StreamData {
