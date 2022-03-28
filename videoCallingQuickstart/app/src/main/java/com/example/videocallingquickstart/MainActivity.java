@@ -126,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void createAgent() {
         Context context = this.getApplicationContext();
-        String userToken = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjEwNCIsIng1dCI6IlJDM0NPdTV6UENIWlVKaVBlclM0SUl4Szh3ZyIsInR5cCI6IkpXVCJ9.eyJza3lwZWlkIjoiYWNzOmI2YWFkYTFmLTBiMWQtNDdhYy04NjZmLTkxYWFlMDBhMWQwMV8wMDAwMDAxMC0xNTM3LTE2ZWEtMGUwNC0zNDNhMGQwMDE4MzUiLCJzY3AiOjE3OTIsImNzaSI6IjE2NDgyOTkwOTgiLCJleHAiOjE2NDgzODU0OTgsImFjc1Njb3BlIjoidm9pcCIsInJlc291cmNlSWQiOiJiNmFhZGExZi0wYjFkLTQ3YWMtODY2Zi05MWFhZTAwYTFkMDEiLCJpYXQiOjE2NDgyOTkwOTh9.SLLINx1Vlw2oI1otZKlx-6dmScZRHvC4RDiGo_CGSBH71RK8fv60BbeqnHLUNLEuRYih47OxgcTaLCum82Ygl8XndwecMLJRo3yThqJsBymZVYe066Dh0QfJAna4xOWr39ks3x-IBabN0F3zgrbXPXwCw3GFRpmSlv-A1BOpvHLKsKcAIMlw96JU3Cw54aPRGxUmGGecwKchCMjwFaPq8rmH0dOjB0WeZXtSyscWqj5o7cnU2Pl9s3F3zcYtScdjTGaLMlhHjlOo8mzmQSsNDLMgzx2apRhDDpWct0-JzXAtQyDsjoOGH2Kg6P_acaW8CVqjs5eSBvBP8urKSZEqpg";
+        String userToken = "<USER_ACCESS_TOKEN>";
         try {
             CommunicationTokenCredential credential = new CommunicationTokenCredential(userToken);
             CallClient callClient = new CallClient();
