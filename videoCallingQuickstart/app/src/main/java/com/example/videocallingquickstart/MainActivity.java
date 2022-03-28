@@ -217,6 +217,7 @@ public class MainActivity extends AppCompatActivity {
                 currentVideoStream = new LocalVideoStream(currentCamera, this);
                 showPreview(currentVideoStream);
                 call.startVideo(this, currentVideoStream).get();
+                switchSourceButton.setVisibility(View.VISIBLE);
             } catch (CallingCommunicationException acsException) {
                 acsException.printStackTrace();
             } catch (ExecutionException | InterruptedException e) {
@@ -229,7 +230,8 @@ public class MainActivity extends AppCompatActivity {
         try {
             LinearLayout container = findViewById(R.id.localvideocontainer);
             for (int i = 0; i < container.getChildCount(); ++i) {
-                if ((int)container.getChildAt(i).getTag() == 0) {
+                Object tag = container.getChildAt(i).getTag();
+                if (tag != null && (int)tag == 0) {
                     container.removeViewAt(i);
                 }
             }
