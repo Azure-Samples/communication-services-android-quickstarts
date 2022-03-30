@@ -7,23 +7,29 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.GridLayout;
+import android.widget.RadioButton;
 import android.widget.Toast;
 import android.widget.LinearLayout;
 import android.content.Context;
 import com.azure.android.communication.calling.CallState;
 import com.azure.android.communication.calling.CallingCommunicationException;
-import com.azure.android.communication.calling.CameraFacing;
+import com.azure.android.communication.calling.GroupCallLocator;
+import com.azure.android.communication.calling.JoinCallOptions;
+import com.azure.android.communication.calling.ParticipantsUpdatedListener;
 import com.azure.android.communication.calling.PropertyChangedEvent;
+import com.azure.android.communication.calling.PropertyChangedListener;
+import com.azure.android.communication.calling.StartCallOptions;
 import com.azure.android.communication.calling.VideoDeviceInfo;
-import com.azure.android.communication.common.CommunicationUserIdentifier;
 import com.azure.android.communication.common.CommunicationIdentifier;
 import com.azure.android.communication.common.CommunicationTokenCredential;
 import com.azure.android.communication.calling.CallAgent;
 import com.azure.android.communication.calling.CallClient;
-import com.azure.android.communication.calling.StartCallOptions;
 import com.azure.android.communication.calling.DeviceManager;
 import com.azure.android.communication.calling.VideoOptions;
 import com.azure.android.communication.calling.LocalVideoStream;
@@ -39,17 +45,24 @@ import com.azure.android.communication.calling.RemoteParticipant;
 import com.azure.android.communication.calling.RemoteVideoStream;
 import com.azure.android.communication.calling.RemoteVideoStreamsEvent;
 import com.azure.android.communication.calling.RendererListener;
+import com.azure.android.communication.common.CommunicationUserIdentifier;
+import com.azure.android.communication.common.MicrosoftTeamsUserIdentifier;
+import com.azure.android.communication.common.PhoneNumberIdentifier;
+import com.azure.android.communication.common.UnknownIdentifier;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
 
     private CallAgent callAgent;
+    private VideoDeviceInfo currentCamera;
     private LocalVideoStream currentVideoStream;
     private DeviceManager deviceManager;
     private IncomingCall incomingCall;
@@ -58,6 +71,13 @@ public class MainActivity extends AppCompatActivity {
     VideoStreamRendererView preview;
     final Map<Integer, StreamData> streamData = new HashMap<>();
     private boolean renderRemoteVideo = true;
+    private ParticipantsUpdatedListener remoteParticipantUpdatedListener;
+    private PropertyChangedListener onStateChangedListener;
+
+    final HashSet<String> joinedParticipants = new HashSet<>();
+
+    Button switchSourceButton;
+    RadioButton oneToOneCall, groupCall;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,8 +97,18 @@ public class MainActivity extends AppCompatActivity {
         startVideo.setOnClickListener(l -> turnOnLocalVideo());
         Button stopVideo = findViewById(R.id.hide_preview);
         stopVideo.setOnClickListener(l -> turnOffLocalVideo());
-        
+
+        switchSourceButton = findViewById(R.id.switch_source);
+        switchSourceButton.setOnClickListener(l -> switchSource());
+
         setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
+
+        oneToOneCall = findViewById(R.id.one_to_one_call);
+        oneToOneCall.setOnClickListener(this::onCallTypeSelected);
+        oneToOneCall.setChecked(true);
+        groupCall = findViewById(R.id.group_call);
+        groupCall.setOnClickListener(this::onCallTypeSelected);
+
     }
 
     private void getAllPermissions() {
@@ -106,6 +136,7 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(context, "Failed to create call agent.", Toast.LENGTH_SHORT).show();
         }
     }
+
     private void handleIncomingCall() {
         callAgent.addOnIncomingCallListener((incomingCall) -> {
             this.incomingCall = incomingCall;
@@ -115,33 +146,62 @@ public class MainActivity extends AppCompatActivity {
 
     private void startCall() {
         Context context = this.getApplicationContext();
-        EditText calleeIdView = findViewById(R.id.callee_id);
-        String calleeId = calleeIdView.getText().toString();
+        EditText callIdView = findViewById(R.id.call_id);
+        String callId = callIdView.getText().toString();
         ArrayList<CommunicationIdentifier> participants = new ArrayList<CommunicationIdentifier>();
-        StartCallOptions options = new StartCallOptions();
         List<VideoDeviceInfo> cameras = deviceManager.getCameras();
-        if(!cameras.isEmpty()) {
-            VideoDeviceInfo camera = chooseCamera(cameras);
-            currentVideoStream = new LocalVideoStream(camera, context);
-            LocalVideoStream[] videoStreams = new LocalVideoStream[1];
-            videoStreams[0] = currentVideoStream;
-            VideoOptions videoOptions = new VideoOptions(videoStreams);
-            options.setVideoOptions(videoOptions);
-            showPreview(currentVideoStream);
-        }
-        participants.add(new CommunicationUserIdentifier(calleeId));
 
-        call = callAgent.startCall(
-                context,
-                participants,
-                options);
-        call.addOnRemoteParticipantsUpdatedListener(this::handleRemoteParticipantsUpdate);
-        call.addOnStateChangedListener(this::handleCallOnStateChanged);
+
+        if(oneToOneCall.isChecked()){
+            StartCallOptions options = new StartCallOptions();
+            if(!cameras.isEmpty()) {
+                currentCamera = getNextAvailableCamera(null);
+                currentVideoStream = new LocalVideoStream(currentCamera, context);
+                LocalVideoStream[] videoStreams = new LocalVideoStream[1];
+                videoStreams[0] = currentVideoStream;
+                VideoOptions videoOptions = new VideoOptions(videoStreams);
+                options.setVideoOptions(videoOptions);
+                showPreview(currentVideoStream);
+            }
+            participants.add(new CommunicationUserIdentifier(callId));
+
+            call = callAgent.startCall(
+                    context,
+                    participants,
+                    options);
+        }
+        else{
+
+            JoinCallOptions options = new JoinCallOptions();
+            if(!cameras.isEmpty()) {
+                currentCamera = getNextAvailableCamera(null);
+                currentVideoStream = new LocalVideoStream(currentCamera, context);
+                LocalVideoStream[] videoStreams = new LocalVideoStream[1];
+                videoStreams[0] = currentVideoStream;
+                VideoOptions videoOptions = new VideoOptions(videoStreams);
+                options.setVideoOptions(videoOptions);
+                showPreview(currentVideoStream);
+            }
+            GroupCallLocator groupCallLocator = new GroupCallLocator(UUID.fromString(callId));
+
+            call = callAgent.join(
+                    context,
+                    groupCallLocator,
+                    options);
+        }
+
+
+
+        remoteParticipantUpdatedListener = this::handleRemoteParticipantsUpdate;
+        onStateChangedListener = this::handleCallOnStateChanged;
+        call.addOnRemoteParticipantsUpdatedListener(remoteParticipantUpdatedListener);
+        call.addOnStateChangedListener(onStateChangedListener);
     }
 
     private void hangUp() {
         try {
             call.hangUp().get();
+            switchSourceButton.setVisibility(View.INVISIBLE);
         } catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }
@@ -154,10 +214,10 @@ public class MainActivity extends AppCompatActivity {
         List<VideoDeviceInfo> cameras = deviceManager.getCameras();
         if(!cameras.isEmpty()) {
             try {
-                VideoDeviceInfo cameraToUse = chooseCamera(cameras);
-                currentVideoStream = new LocalVideoStream(cameraToUse, this);
+                currentVideoStream = new LocalVideoStream(currentCamera, this);
                 showPreview(currentVideoStream);
                 call.startVideo(this, currentVideoStream).get();
+                switchSourceButton.setVisibility(View.VISIBLE);
             } catch (CallingCommunicationException acsException) {
                 acsException.printStackTrace();
             } catch (ExecutionException | InterruptedException e) {
@@ -168,7 +228,14 @@ public class MainActivity extends AppCompatActivity {
 
     public void turnOffLocalVideo() {
         try {
-            ((LinearLayout) findViewById(R.id.localvideocontainer)).removeAllViews();
+            LinearLayout container = findViewById(R.id.localvideocontainer);
+            for (int i = 0; i < container.getChildCount(); ++i) {
+                Object tag = container.getChildAt(i).getTag();
+                if (tag != null && (int)tag == 0) {
+                    container.removeViewAt(i);
+                }
+            }
+            switchSourceButton.setVisibility(View.INVISIBLE);
             previewRenderer.dispose();
             previewRenderer = null;
             call.stopVideo(this, currentVideoStream).get();
@@ -179,39 +246,64 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    VideoDeviceInfo chooseCamera(List<VideoDeviceInfo> cameras) {
-        for (VideoDeviceInfo camera : cameras) {
-            if (camera.getCameraFacing() == CameraFacing.FRONT) {
-                return camera;
+    private VideoDeviceInfo getNextAvailableCamera(VideoDeviceInfo camera) {
+        List<VideoDeviceInfo> cameras = deviceManager.getCameras();
+        int currentIndex = 0;
+        if (camera == null) {
+            return cameras.isEmpty() ? null : cameras.get(0);
+        }
+
+        for (int i = 0; i < cameras.size(); i++) {
+            if (camera.getId().equals(cameras.get(i).getId())) {
+                currentIndex = i;
+                break;
             }
         }
-        return cameras.get(0);
+        int newIndex = (currentIndex + 1) % cameras.size();
+        return cameras.get(newIndex);
     }
 
     private void showPreview(LocalVideoStream stream) {
         // Create renderer
         previewRenderer = new VideoStreamRenderer(stream, this);
-        LinearLayout layout = ((LinearLayout)findViewById(R.id.localvideocontainer));
+        LinearLayout layout = findViewById(R.id.localvideocontainer);
         preview = previewRenderer.createView(new CreateViewOptions(ScalingMode.FIT));
+        preview.setTag(0);
         runOnUiThread(() -> {
             layout.addView(preview);
+            switchSourceButton.setVisibility(View.VISIBLE);
         });
     }
 
-    private void handleCallOnStateChanged(PropertyChangedEvent args) {
-        if (call.getState() == CallState.CONNECTED) {
-            handleCallState();
-        }
-        if (call.getState() == CallState.DISCONNECTED) {
-            if (previewRenderer != null) {
-                previewRenderer.dispose();
+    public void switchSource() {
+        if (currentVideoStream != null) {
+            try {
+                currentCamera = getNextAvailableCamera(currentCamera);
+                currentVideoStream.switchSource(currentCamera).get();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
             }
         }
     }
 
+    private void handleCallOnStateChanged(PropertyChangedEvent args) {
+        if (call.getState() == CallState.CONNECTED) {
+            runOnUiThread(() -> Toast.makeText(this, "Call is CONNECTED", Toast.LENGTH_SHORT).show());
+            handleCallState();
+        }
+        if (call.getState() == CallState.DISCONNECTED) {
+            runOnUiThread(() -> Toast.makeText(this, "Call is DISCONNECTED", Toast.LENGTH_SHORT).show());
+            if (previewRenderer != null) {
+                previewRenderer.dispose();
+            }
+            switchSourceButton.setVisibility(View.INVISIBLE);
+        }
+    }
+
     private void handleCallState() {
-        LinearLayout participantVideoContainer = findViewById(R.id.remotevideocontainer);
-        handleAddedParticipants(call.getRemoteParticipants(), participantVideoContainer);
+        handleAddedParticipants(call.getRemoteParticipants());
     }
 
     private void answerIncomingCall() {
@@ -222,8 +314,8 @@ public class MainActivity extends AppCompatActivity {
         AcceptCallOptions acceptCallOptions = new AcceptCallOptions();
         List<VideoDeviceInfo> cameras = deviceManager.getCameras();
         if(!cameras.isEmpty()) {
-            VideoDeviceInfo camera = chooseCamera(cameras);
-            currentVideoStream = new LocalVideoStream(camera, context);
+            currentCamera = getNextAvailableCamera(null);
+            currentVideoStream = new LocalVideoStream(currentCamera, context);
             LocalVideoStream[] videoStreams = new LocalVideoStream[1];
             videoStreams[0] = currentVideoStream;
             VideoOptions videoOptions = new VideoOptions(videoStreams);
@@ -238,18 +330,52 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        call.addOnRemoteParticipantsUpdatedListener(this::handleRemoteParticipantsUpdate);
-        call.addOnStateChangedListener(this::handleCallOnStateChanged);
+        remoteParticipantUpdatedListener = this::handleRemoteParticipantsUpdate;
+        onStateChangedListener = this::handleCallOnStateChanged;
+        call.addOnRemoteParticipantsUpdatedListener(remoteParticipantUpdatedListener);
+        call.addOnStateChangedListener(onStateChangedListener);
     }
 
     public void handleRemoteParticipantsUpdate(ParticipantsUpdatedEvent args) {
-        LinearLayout participantVideoContainer = findViewById(R.id.remotevideocontainer);
-        handleAddedParticipants(args.getAddedParticipants(), participantVideoContainer);
+        handleAddedParticipants(args.getAddedParticipants());
+        handleRemovedParticipants(args.getRemovedParticipants());
     }
 
-    private void handleAddedParticipants(List<RemoteParticipant> participants, LinearLayout participantVideoContainer) {
+    private void handleAddedParticipants(List<RemoteParticipant> participants) {
         for (RemoteParticipant remoteParticipant : participants) {
-            remoteParticipant.addOnVideoStreamsUpdatedListener(videoStreamsEventArgs -> videoStreamsUpdated(videoStreamsEventArgs));
+            if(!joinedParticipants.contains(getId(remoteParticipant))) {
+                joinedParticipants.add(getId(remoteParticipant));
+
+                if (renderRemoteVideo) {
+                    for (RemoteVideoStream stream : remoteParticipant.getVideoStreams()) {
+                        StreamData data = new StreamData(stream, null, null);
+                        streamData.put(stream.getId(), data);
+                        startRenderingVideo(data);
+                    }
+                }
+                remoteParticipant.addOnVideoStreamsUpdatedListener(videoStreamsEventArgs -> videoStreamsUpdated(videoStreamsEventArgs));
+            }
+        }
+    }
+
+    public String getId(final RemoteParticipant remoteParticipant) {
+        final CommunicationIdentifier identifier = remoteParticipant.getIdentifier();
+        if (identifier instanceof PhoneNumberIdentifier) {
+            return ((PhoneNumberIdentifier) identifier).getPhoneNumber();
+        } else if (identifier instanceof MicrosoftTeamsUserIdentifier) {
+            return ((MicrosoftTeamsUserIdentifier) identifier).getUserId();
+        } else if (identifier instanceof CommunicationUserIdentifier) {
+            return ((CommunicationUserIdentifier) identifier).getId();
+        } else {
+            return ((UnknownIdentifier) identifier).getId();
+        }
+    }
+
+    private void handleRemovedParticipants(List<RemoteParticipant> removedParticipants) {
+        for (RemoteParticipant remoteParticipant : removedParticipants) {
+            if(joinedParticipants.contains(getId(remoteParticipant))) {
+                joinedParticipants.remove(getId(remoteParticipant));
+            }
         }
     }
 
@@ -271,7 +397,7 @@ public class MainActivity extends AppCompatActivity {
         if (data.renderer != null) {
             return;
         }
-        LinearLayout layout = ((LinearLayout)findViewById(R.id.remotevideocontainer));
+        GridLayout layout = ((GridLayout)findViewById(R.id.remotevideocontainer));
         data.renderer = new VideoStreamRenderer(data.stream, this);
         data.renderer.addRendererListener(new RendererListener() {
             @Override
@@ -287,8 +413,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         data.rendererView = data.renderer.createView(new CreateViewOptions(ScalingMode.FIT));
+        data.rendererView.setTag(data.stream.getId());
         runOnUiThread(() -> {
-            layout.addView(data.rendererView);
+            GridLayout.LayoutParams params = new GridLayout.LayoutParams(layout.getLayoutParams());
+            DisplayMetrics displayMetrics = new DisplayMetrics();
+            getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+            params.height = (int)(displayMetrics.heightPixels / 2.5);
+            params.width = displayMetrics.widthPixels / 2;
+            layout.addView(data.rendererView, params);
         });
     }
 
@@ -298,7 +430,13 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         runOnUiThread(() -> {
-            ((LinearLayout) findViewById(R.id.remotevideocontainer)).removeAllViews();
+            GridLayout layout = findViewById(R.id.remotevideocontainer);
+            for(int i = 0; i < layout.getChildCount(); ++ i) {
+                View childView =  layout.getChildAt(i);
+                if ((int)childView.getTag() == data.stream.getId()) {
+                    layout.removeViewAt(i);
+                }
+            }
         });
         data.rendererView = null;
         // Dispose renderer
@@ -314,6 +452,24 @@ public class MainActivity extends AppCompatActivity {
             this.stream = stream;
             this.renderer = renderer;
             this.rendererView = rendererView;
+        }
+    }
+
+    public void onCallTypeSelected(View view) {
+        boolean checked = ((RadioButton) view).isChecked();
+        EditText callIdView = findViewById(R.id.call_id);
+
+        switch(view.getId()) {
+            case R.id.one_to_one_call:
+                if (checked){
+                    callIdView.setHint("Callee id");
+                }
+                break;
+            case R.id.group_call:
+                if (checked){
+                    callIdView.setHint("Group Call GUID");
+                }
+                break;
         }
     }
 }
