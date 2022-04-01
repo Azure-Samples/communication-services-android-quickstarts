@@ -35,19 +35,17 @@ public class MainActivity extends AppCompatActivity {
                 new CommunicationTokenRefreshOptions(this::fetchToken, true);
         CommunicationTokenCredential communicationTokenCredential = new CommunicationTokenCredential(communicationTokenRefreshOptions);
 
-        GroupCallOptions options = new GroupCallOptions(this,
-                communicationTokenCredential,
+        GroupCallOptions options = new GroupCallOptions(communicationTokenCredential,
                 UUID.fromString("GROUP_CALL_ID"),
                 "DISPLAY_NAME");
 
         /* TeamsMeetingOptions options = new TeamsMeetingOptions(
-                this,
                 communicationTokenCredential,
                 "TEAMS_MEETING_LINK",
                 "DISPLAY_NAME"
         );*/
 
-        callComposite.launch(options);
+        callComposite.launch(this, options);
     }
 
     private String fetchToken() {
