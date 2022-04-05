@@ -21,22 +21,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startCallComposite() {
-        val communicationTokenRefreshOptions = CommunicationTokenRefreshOptions({ fetchToken() }, true)
-        val communicationTokenCredential = CommunicationTokenCredential(communicationTokenRefreshOptions)
+        val communicationTokenRefreshOptions =
+            CommunicationTokenRefreshOptions({ fetchToken() }, true)
+        val communicationTokenCredential =
+            CommunicationTokenCredential(communicationTokenRefreshOptions)
+
         val options = GroupCallOptions(
-            this,
             communicationTokenCredential,
             UUID.fromString("GROUP_CALL_ID"),
             "DISPLAY_NAME",
         )
+
         /*val options = TeamsMeetingOptions(
-            this,
             communicationTokenCredential,
             "TEAMS_MEETING_LINK",
             "DISPLAY_NAME",
         )*/
+        
         val callComposite: CallComposite = CallCompositeBuilder().build()
-        callComposite.launch(options)
+        callComposite.launch(this, options)
     }
 
     private fun fetchToken(): String {
