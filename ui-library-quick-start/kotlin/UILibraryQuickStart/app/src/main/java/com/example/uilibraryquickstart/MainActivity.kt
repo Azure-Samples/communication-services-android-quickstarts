@@ -7,8 +7,8 @@ import com.azure.android.communication.common.CommunicationTokenCredential
 import com.azure.android.communication.common.CommunicationTokenRefreshOptions
 import com.azure.android.communication.ui.CallCompositeBuilder
 import com.azure.android.communication.ui.CallComposite
-import com.azure.android.communication.ui.GroupCallOptions
-import com.azure.android.communication.ui.TeamsMeetingOptions
+import com.azure.android.communication.ui.models.GroupCallOptions
+import com.azure.android.communication.ui.models.TeamsMeetingOptions
 import java.util.UUID
 
 class MainActivity : AppCompatActivity() {
