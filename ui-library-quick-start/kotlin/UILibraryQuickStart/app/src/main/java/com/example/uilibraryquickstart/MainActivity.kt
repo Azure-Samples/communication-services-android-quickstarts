@@ -5,10 +5,11 @@ import android.os.Bundle
 import android.widget.Button
 import com.azure.android.communication.common.CommunicationTokenCredential
 import com.azure.android.communication.common.CommunicationTokenRefreshOptions
-import com.azure.android.communication.ui.CallCompositeBuilder
-import com.azure.android.communication.ui.CallComposite
-import com.azure.android.communication.ui.GroupCallOptions
-import com.azure.android.communication.ui.TeamsMeetingOptions
+import com.azure.android.communication.ui.calling.CallComposite
+import com.azure.android.communication.ui.calling.CallCompositeBuilder
+import com.azure.android.communication.ui.calling.models.CallCompositeGroupCallLocator
+import com.azure.android.communication.ui.calling.models.CallCompositeJoinLocator
+import com.azure.android.communication.ui.calling.models.CallCompositeRemoteOptions
 import java.util.UUID
 
 class MainActivity : AppCompatActivity() {
@@ -16,33 +17,22 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val startCallCompositeButton: Button = findViewById(R.id.startUILibraryButton)
-        startCallCompositeButton.setOnClickListener { l -> startCallComposite() }
+        val startButton: Button = findViewById(R.id.startButton)
+        startButton.setOnClickListener { l -> startCallComposite() }
     }
 
     private fun startCallComposite() {
-        val communicationTokenRefreshOptions =
-            CommunicationTokenRefreshOptions({ fetchToken() }, true)
-        val communicationTokenCredential =
-            CommunicationTokenCredential(communicationTokenRefreshOptions)
+        val communicationTokenRefreshOptions = CommunicationTokenRefreshOptions({ fetchToken() }, true)
+        val communicationTokenCredential = CommunicationTokenCredential(communicationTokenRefreshOptions)
 
-        val options = GroupCallOptions(
-            communicationTokenCredential,
-            UUID.fromString("GROUP_CALL_ID"),
-            "DISPLAY_NAME",
-        )
+        val locator: CallCompositeJoinLocator = CallCompositeGroupCallLocator(UUID.fromString("GROUP_CALL_ID"))
+        val remoteOptions = CallCompositeRemoteOptions(locator, communicationTokenCredential, "DISPLAY_NAME")
 
-        /*val options = TeamsMeetingOptions(
-            communicationTokenCredential,
-            "TEAMS_MEETING_LINK",
-            "DISPLAY_NAME",
-        )*/
-        
         val callComposite: CallComposite = CallCompositeBuilder().build()
-        callComposite.launch(this, options)
+        callComposite.launch(this, remoteOptions)
     }
 
-    private fun fetchToken(): String {
+    private fun fetchToken(): String? {
         return "USER_ACCESS_TOKEN"
     }
 }
