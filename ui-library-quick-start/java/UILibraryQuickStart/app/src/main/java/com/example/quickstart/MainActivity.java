@@ -1,17 +1,15 @@
 package com.example.quickstart;
 
 import androidx.appcompat.app.AppCompatActivity;
-
 import android.os.Bundle;
 import android.widget.Button;
-
 import com.azure.android.communication.common.CommunicationTokenCredential;
 import com.azure.android.communication.common.CommunicationTokenRefreshOptions;
-import com.azure.android.communication.ui.CallCompositeBuilder;
-import com.azure.android.communication.ui.CallComposite;
-import com.azure.android.communication.ui.GroupCallOptions;
-import com.azure.android.communication.ui.TeamsMeetingOptions;
-
+import com.azure.android.communication.ui.calling.CallComposite;
+import com.azure.android.communication.ui.calling.CallCompositeBuilder;
+import com.azure.android.communication.ui.calling.models.CallCompositeGroupCallLocator;
+import com.azure.android.communication.ui.calling.models.CallCompositeJoinLocator;
+import com.azure.android.communication.ui.calling.models.CallCompositeRemoteOptions;
 import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
@@ -21,31 +19,25 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Button startCallCompositeButton = findViewById(R.id.startUILibraryButton);
+        Button startButton = findViewById(R.id.startButton);
 
-        startCallCompositeButton.setOnClickListener(l -> {
+        startButton.setOnClickListener(l -> {
             startCallComposite();
         });
     }
 
     private void startCallComposite() {
-        CallComposite callComposite = new CallCompositeBuilder().build();
-
         CommunicationTokenRefreshOptions communicationTokenRefreshOptions =
                 new CommunicationTokenRefreshOptions(this::fetchToken, true);
-        CommunicationTokenCredential communicationTokenCredential = new CommunicationTokenCredential(communicationTokenRefreshOptions);
+        CommunicationTokenCredential communicationTokenCredential =
+                new CommunicationTokenCredential(communicationTokenRefreshOptions);
 
-        GroupCallOptions options = new GroupCallOptions(communicationTokenCredential,
-                UUID.fromString("GROUP_CALL_ID"),
-                "DISPLAY_NAME");
+        final CallCompositeJoinLocator locator = new CallCompositeGroupCallLocator(UUID.fromString("GROUP_CALL_ID"));
+        final CallCompositeRemoteOptions remoteOptions =
+                new CallCompositeRemoteOptions(locator, communicationTokenCredential, "DISPLAY_NAME");
 
-        /* TeamsMeetingOptions options = new TeamsMeetingOptions(
-                communicationTokenCredential,
-                "TEAMS_MEETING_LINK",
-                "DISPLAY_NAME"
-        );*/
-
-        callComposite.launch(this, options);
+        CallComposite callComposite = new CallCompositeBuilder().build();
+        callComposite.launch(this, remoteOptions);
     }
 
     private String fetchToken() {
