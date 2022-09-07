@@ -1,40 +1,83 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
-
+    tools:context=".MainActivity"
+    >
     <LinearLayout
-        android:layout_width="409dp"
-        android:layout_height="624dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:orientation="vertical"
-        tools:layout_editor_absoluteX="1dp"
-        tools:layout_editor_absoluteY="106dp">
+        >
+        <EditText
+            android:id="@+id/TokenEditText"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:hint="ACS Token"
+            android:paddingLeft="15dp"
+            android:paddingRight="15dp"
+            android:layout_marginTop="50dp"
+            android:layout_marginLeft="50dp"
+            android:layout_marginRight="50dp"
+            android:background="@drawable/acs_spool_ui_blue_border"
+            />
 
         <EditText
-            android:id="@+id/txtToken"
+            android:id="@+id/MeetingUrlEditText"
             android:layout_width="match_parent"
-            android:layout_height="105dp"
-            android:ems="10"
-            android:hint="Please enter a valid ACS token."
-            android:inputType="textPersonName" />
-
-        <EditText
-            android:id="@+id/txtCallee"
-            android:layout_width="match_parent"
-            android:layout_height="47dp"
-            android:ems="10"
-            android:hint="Please enter a group id."
-            android:inputType="textPersonName" />
+            android:layout_height="50dp"
+            android:hint="Teams Meeting Link"
+            android:paddingLeft="15dp"
+            android:paddingRight="15dp"
+            android:layout_marginTop="50dp"
+            android:layout_marginLeft="50dp"
+            android:layout_marginRight="50dp"
+            android:background="@drawable/acs_spool_ui_blue_border"
+            />
 
         <Button
-            android:id="@+id/button"
+            android:id="@+id/StartCallWithVirtualVideo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Join a call"
-            tools:text="Join a call" />
-    </LinearLayout>
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:layout_marginTop="50dp"
+            android:layout_marginLeft="50dp"
+            android:layout_marginRight="50dp"
+            android:background="@android:color/holo_green_light"
+            android:text="Start Call using Virtual Video"
+            android:onClick="StartCallWithVirtualVideo"
+            />
 
+        <Button
+            android:id="@+id/StartCallWithScreenShareVideo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:layout_marginTop="50dp"
+            android:layout_marginLeft="50dp"
+            android:layout_marginRight="50dp"
+            android:background="@android:color/holo_green_light"
+            android:text="Start Call using screenShare Video"
+            android:onClick="StartCallWithScreenShareVideo"
+            android:lineSpacingExtra="2dp"
+            />
+
+        <Button
+            android:id="@+id/StopCall"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            tools:text="Stop"
+            android:layout_marginTop="50dp"
+            android:layout_marginLeft="50dp"
+            android:layout_marginRight="50dp"
+            android:background="@android:color/holo_red_light"
+            android:text="End Call"
+            android:onClick="EndCall"
+            />
+    </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
