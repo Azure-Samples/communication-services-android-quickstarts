@@ -29,6 +29,26 @@ class MainActivity : AppCompatActivity() {
         val remoteOptions = CallCompositeRemoteOptions(locator, communicationTokenCredential, "DISPLAY_NAME")
 
         val callComposite: CallComposite = CallCompositeBuilder().build()
+        
+        /**
+        // Optional parameter - localOptions
+        //    - to customize participant view data such as avatar image, scale type and display name
+        //    - and to customize navigation bar's title and subtitle
+        val CallCompositeParticipantViewData participantViewData = CallCompositeParticipantViewData()
+            .setAvatarBitmap((Bitmap) avatarBitmap)
+            .setScaleType((ImageView.ScaleType) scaleType)
+            .setDisplayName((String) displayName);
+
+        val CallCompositeNavigationBarViewData navigationBarViewData = CallCompositeNavigationBarViewData()
+            .setTitle((String) title)
+            .setSubtitle((String) subTitle);
+
+        val CallCompositeLocalOptions localOptions = new CallCompositeLocalOptions()
+            .setParticipantViewData(participantViewData)
+            .setNavigationBarViewData(navigationBarViewData);
+
+        callComposite.launch(callLauncherActivity, remoteOptions, localOptions);
+         */
         callComposite.launch(this, remoteOptions)
     }
 
