@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
         val remoteOptions = CallCompositeRemoteOptions(locator, communicationTokenCredential, "DISPLAY_NAME")
 
         val callComposite: CallComposite = CallCompositeBuilder().build()
-        
+
         /**
         // Optional parameter - localOptions
         //    - to customize participant view data such as avatar image, scale type and display name
