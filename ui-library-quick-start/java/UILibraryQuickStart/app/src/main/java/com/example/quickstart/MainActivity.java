@@ -45,13 +45,13 @@ public class MainActivity extends AppCompatActivity {
                 .setScaleType((ImageView.ScaleType) scaleType)
                 .setDisplayName((String) displayName);
 
-        final CallCompositeNavigationBarViewData navigationBarViewData = new CallCompositeNavigationBarViewData()
+        final CallCompositeSetupScreenViewData setupScreenViewData = new CallCompositeSetupScreenViewData()
                 .setTitle((String) title)
                 .setSubtitle((String) subTitle);
 
         final CallCompositeLocalOptions localOptions = new CallCompositeLocalOptions()
                 .setParticipantViewData(participantViewData)
-                .setNavigationBarViewData(navigationBarViewData);
+                .setSetupScreenViewData(setupScreenViewData);
 
         callComposite.launch(callLauncherActivity, remoteOptions, localOptions);
          */
