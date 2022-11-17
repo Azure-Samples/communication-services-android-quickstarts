@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">WebView Quickstart</string>
+    <string name="no_txt">No</string>
+    <string name="yes_txt">Yes</string>
+</resources>
