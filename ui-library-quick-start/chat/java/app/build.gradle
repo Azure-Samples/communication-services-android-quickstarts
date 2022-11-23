@@ -8,7 +8,7 @@ android {
 
     defaultConfig {
         applicationId "com.example.uilibraryquickstart.chat"
-        minSdk 21
+        minSdk 23
         targetSdk 33
         versionCode 1
         versionName "1.0"
@@ -26,6 +26,11 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+    packagingOptions {
+        resources {
+            excludes += '/META-INF/*'
+        }
+    }
 }
 
 dependencies {
@@ -36,4 +41,6 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.4'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.0'
+
+    implementation 'com.azure.android:azure-communication-ui-chat:1.0.0-beta.1'
 }
