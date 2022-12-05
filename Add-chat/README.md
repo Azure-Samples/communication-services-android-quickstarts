@@ -17,6 +17,7 @@ To complete this tutorial, you’ll need the following prerequisites:
 
 - An Azure account with an active subscription. [Create an account for free](https://azure.microsoft.com/free/?WT.mc_id=A261C142F). 
 - [Android Studio](https://developer.android.com/studio), for running your Android application.
+- Android SDK for Android 11 (API level 30)
 - A deployed Communication Services resource. [Create a Communication Services resource](https://docs.microsoft.com/azure/communication-services/quickstarts/create-communication-resource).
 - Create two Communication Services Users and issue them a user access token [User Access Token](https://docs.microsoft.com/azure/communication-services/quickstarts/access-tokens). Be sure to set the scope to chat, and note the token string and the userId string. In this quickstart, we will create a thread with an initial participant and then add a second participant to the thread.
 
