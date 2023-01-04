@@ -11,9 +11,10 @@ import android.widget.Button;
 
 import com.azure.android.communication.common.CommunicationTokenCredential;
 import com.azure.android.communication.common.CommunicationTokenRefreshOptions;
+import com.azure.android.communication.common.CommunicationUserIdentifier;
 import com.azure.android.communication.ui.chat.ChatAdapter;
 import com.azure.android.communication.ui.chat.ChatAdapterBuilder;
-import com.azure.android.communication.ui.chat.presentation.ChatCompositeView;
+import com.azure.android.communication.ui.chat.presentation.ChatThreadView;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -32,15 +33,16 @@ public class MainActivity extends AppCompatActivity {
             CommunicationTokenCredential communicationTokenCredential =
                     new CommunicationTokenCredential(communicationTokenRefreshOptions);
             chatAdapter = new ChatAdapterBuilder()
-                    .endpointUrl(endpoint())
-                    .communicationTokenCredential(communicationTokenCredential)
-                    .identity(acsIdentity())
+                    .endpoint(endpoint())
+                    .threadId(threadId())
+                    .credential(communicationTokenCredential)
+                    .identity(new CommunicationUserIdentifier(acsIdentity()))
                     .displayName(displayName())
                     .build();
 
             try {
-                chatAdapter.connect(MainActivity.this, threadId()).get();
-                View chatView = new ChatCompositeView(MainActivity.this, chatAdapter);
+                chatAdapter.connect(MainActivity.this).get();
+                View chatView = new ChatThreadView(MainActivity.this, chatAdapter);
                 addContentView(chatView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT));
             }
             catch (Exception e){
