@@ -8,9 +8,10 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.azure.android.communication.common.CommunicationTokenCredential
 import com.azure.android.communication.common.CommunicationTokenRefreshOptions
+import com.azure.android.communication.common.CommunicationUserIdentifier
 import com.azure.android.communication.ui.chat.ChatAdapter
 import com.azure.android.communication.ui.chat.ChatAdapterBuilder
-import com.azure.android.communication.ui.chat.presentation.ChatCompositeView
+import com.azure.android.communication.ui.chat.presentation.ChatThreadView
 
 class MainActivity : AppCompatActivity() {
     private lateinit var chatAdapter: ChatAdapter
@@ -27,14 +28,15 @@ class MainActivity : AppCompatActivity() {
             val communicationTokenCredential =
                 CommunicationTokenCredential(communicationTokenRefreshOptions)
             chatAdapter = ChatAdapterBuilder()
-                .endpointUrl(endpoint)
-                .communicationTokenCredential(communicationTokenCredential)
-                .identity(acsIdentity)
+                .endpoint(endpoint)
+                .credential(communicationTokenCredential)
+                .identity(CommunicationUserIdentifier(acsIdentity))
                 .displayName(displayName)
+                .threadId(threadId)
                 .build()
             try {
-                chatAdapter.connect(this@MainActivity, threadId).get()
-                val chatView: View = ChatCompositeView(this@MainActivity, chatAdapter)
+                chatAdapter.connect(this@MainActivity).get()
+                val chatView: View = ChatThreadView(this@MainActivity, chatAdapter)
                 addContentView(
                     chatView,
                     ViewGroup.LayoutParams(
