@@ -20,7 +20,7 @@ Azure Communication Services enable developers to add communication capabilities
 7. [Raw media Access](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/voice-video-calling/get-started-raw-media-access)
 
 ### Chat SDK Quickstarts
-1. [Add Chat to our App](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/chat/get-started)
+1. [Add Chat to your App](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/chat/get-started)
 2. [Using Chat SDK with React Native](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/chat/react-native)
 
 ### UI Libraries
