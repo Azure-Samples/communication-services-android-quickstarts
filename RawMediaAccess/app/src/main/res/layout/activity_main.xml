@@ -6,10 +6,12 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity"
+    android:id="@+id/main_container"
     >
     <LinearLayout
+        android:id="@+id/ControlsContainer"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
         >
         <EditText
@@ -19,9 +21,9 @@
             android:hint="ACS Token"
             android:paddingLeft="15dp"
             android:paddingRight="15dp"
-            android:layout_marginTop="50dp"
-            android:layout_marginLeft="50dp"
-            android:layout_marginRight="50dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp"
             android:background="@drawable/acs_spool_ui_blue_border"
             />
 
@@ -32,9 +34,9 @@
             android:hint="Teams Meeting Link"
             android:paddingLeft="15dp"
             android:paddingRight="15dp"
-            android:layout_marginTop="50dp"
-            android:layout_marginLeft="50dp"
-            android:layout_marginRight="50dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp"
             android:background="@drawable/acs_spool_ui_blue_border"
             />
 
@@ -44,9 +46,9 @@
             android:layout_height="wrap_content"
             android:paddingTop="10dp"
             android:paddingBottom="10dp"
-            android:layout_marginTop="50dp"
-            android:layout_marginLeft="50dp"
-            android:layout_marginRight="50dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp"
             android:background="@android:color/holo_green_light"
             android:text="Start Call using Virtual Video"
             android:onClick="StartCallWithVirtualVideo"
@@ -58,9 +60,9 @@
             android:layout_height="wrap_content"
             android:paddingTop="10dp"
             android:paddingBottom="10dp"
-            android:layout_marginTop="50dp"
-            android:layout_marginLeft="50dp"
-            android:layout_marginRight="50dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp"
             android:background="@android:color/holo_green_light"
             android:text="Start Call using screenShare Video"
             android:onClick="StartCallWithScreenShareVideo"
@@ -68,16 +70,37 @@
             />
 
         <Button
-            android:id="@+id/StopCall"
+            android:id="@+id/EndCall"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
-            tools:text="Stop"
-            android:layout_marginTop="50dp"
-            android:layout_marginLeft="50dp"
-            android:layout_marginRight="50dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginRight="20dp"
             android:background="@android:color/holo_red_light"
             android:text="End Call"
             android:onClick="EndCall"
             />
     </LinearLayout>
+
+    <!--SurfaceView
+        android:id="@+id/OutgoingVideoSurfaceView"
+        android:layout_width="320dp"
+        android:layout_height="180dp"
+        app:layout_constraintRight_toRightOf="@+id/main_container"
+        app:layout_constraintLeft_toLeftOf="@+id/main_container"
+        app:layout_constraintBottom_toBottomOf="@+id/main_container"
+        android:layout_marginBottom="30dp"
+        /-->
+
+    <SurfaceView
+        android:id="@+id/IncomingVideoSurfaceView"
+        android:layout_width="320dp"
+        android:layout_height="180dp"
+        app:layout_constraintRight_toRightOf="@+id/main_container"
+        app:layout_constraintLeft_toLeftOf="@+id/main_container"
+        app:layout_constraintTop_toBottomOf="@+id/ControlsContainer"
+        android:layout_marginBottom="20dp"
+        android:layout_marginTop="20dp"
+        android:visibility="gone"
+        />
 </androidx.constraintlayout.widget.ConstraintLayout>

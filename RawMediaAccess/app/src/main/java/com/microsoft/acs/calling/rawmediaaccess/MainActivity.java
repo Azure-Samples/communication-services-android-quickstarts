@@ -1,9 +1,15 @@
 package com.microsoft.acs.calling.rawmediaaccess;
 
 import android.Manifest;
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.PorterDuff;
 import android.media.AudioManager;
+import android.media.projection.MediaProjectionManager;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -13,90 +19,164 @@ import androidx.core.app.ActivityCompat;
 
 import com.azure.android.communication.calling.Call;
 import com.azure.android.communication.calling.CallAgent;
+import com.azure.android.communication.calling.CallAgentOptions;
 import com.azure.android.communication.calling.CallClient;
+import com.azure.android.communication.calling.CallVideoStream;
 import com.azure.android.communication.calling.CallingCommunicationException;
 import com.azure.android.communication.calling.HangUpOptions;
+import com.azure.android.communication.calling.IncomingVideoOptions;
+import com.azure.android.communication.calling.IncomingVideoStream;
 import com.azure.android.communication.calling.JoinCallOptions;
 import com.azure.android.communication.calling.JoinMeetingLocator;
+import com.azure.android.communication.calling.OutgoingVideoOptions;
 import com.azure.android.communication.calling.OutgoingVideoStream;
-import com.azure.android.communication.calling.OutgoingVideoStreamKind;
-import com.azure.android.communication.calling.PixelFormat;
+import com.azure.android.communication.calling.ParticipantsUpdatedEvent;
+import com.azure.android.communication.calling.RawIncomingVideoStream;
+import com.azure.android.communication.calling.RawOutgoingVideoStream;
 import com.azure.android.communication.calling.RawOutgoingVideoStreamOptions;
-import com.azure.android.communication.calling.ScreenShareRawOutgoingVideoStream;
+import com.azure.android.communication.calling.RawVideoFrame;
+import com.azure.android.communication.calling.RawVideoFrameBuffer;
+import com.azure.android.communication.calling.RawVideoFrameReceivedEvent;
+import com.azure.android.communication.calling.RemoteParticipant;
+import com.azure.android.communication.calling.ScreenShareOutgoingVideoStream;
 import com.azure.android.communication.calling.TeamsMeetingLinkLocator;
-import com.azure.android.communication.calling.VideoFormat;
-import com.azure.android.communication.calling.VideoFrameKind;
-import com.azure.android.communication.calling.VideoOptions;
-import com.azure.android.communication.calling.VirtualRawOutgoingVideoStream;
+import com.azure.android.communication.calling.VideoStreamFormat;
+import com.azure.android.communication.calling.VideoStreamFormatChangedEvent;
+import com.azure.android.communication.calling.VideoStreamPixelFormat;
+import com.azure.android.communication.calling.VideoStreamResolution;
+import com.azure.android.communication.calling.VideoStreamStateChangedEvent;
+import com.azure.android.communication.calling.VideoStreamType;
+import com.azure.android.communication.calling.VirtualOutgoingVideoStream;
 import com.azure.android.communication.common.CommunicationTokenCredential;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
-public class MainActivity extends AppCompatActivity {
-
+public class MainActivity extends AppCompatActivity
+{
+    private Map<Integer, IncomingVideoStream> incomingVideoStreamMap;
     private EditText tokenEditText;
     private EditText meetingUrlEditText;
-    private CallClient client;
+    private CallClient callClient;
     private CallAgent callAgent;
     private Call call;
-    private OutgoingVideoStream outgoingVideoStream;
-    private FrameGenerator frameGenerator;
-    private RawOutgoingVideoStreamOptions options;
-    private int width = 0;
-    private int height = 0;
+    private RawOutgoingVideoStream rawOutgoingVideoStream;
+    private VideoFrameSender videoFrameSender;
+    private VideoFrameRenderer videoFrameRenderer;
+    private ScreenShareService screenShareService;
+    private VideoStreamType outgoingVideoStreamType;
+    private int w = 0;
+    private int h = 0;
+    private int frameRate = 0;
+    private double maxWidth = 1920.0;
+    private double maxHeight = 1080.0;
     private boolean callInProgress = false;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-
+    protected void onCreate(Bundle savedInstanceState)
+    {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        GetAllPermissions();
         tokenEditText = findViewById(R.id.TokenEditText);
         meetingUrlEditText = findViewById(R.id.MeetingUrlEditText);
+
+        videoFrameRenderer = new VideoFrameRenderer(this);
+        incomingVideoStreamMap = new HashMap<>();
+
+        GetAllPermissions();
 
         setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
     }
 
-    private void GetAllPermissions() {
-
+    private void GetAllPermissions()
+    {
         String[] requiredPermissions = new String[]
-                {
-                        Manifest.permission.RECORD_AUDIO,
-                        Manifest.permission.CAMERA,
-                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                        Manifest.permission.READ_PHONE_STATE
-                };
+        {
+                Manifest.permission.RECORD_AUDIO,
+                Manifest.permission.CAMERA,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.READ_PHONE_STATE
+        };
 
         ArrayList<String> permissionsToAskFor = new ArrayList<>();
-        for (String permission : requiredPermissions) {
-
-            if (ActivityCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
-
+        for (String permission : requiredPermissions)
+        {
+            if (ActivityCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED)
+            {
                 permissionsToAskFor.add(permission);
             }
         }
 
-        if (!permissionsToAskFor.isEmpty()) {
-
+        if (!permissionsToAskFor.isEmpty())
+        {
             ActivityCompat.requestPermissions(this, permissionsToAskFor.toArray(new String[0]), 1);
         }
     }
 
-    private void CreateAgent() {
+    public void GetScreenSharePermissions()
+    {
+        try
+        {
+            MediaProjectionManager mediaProjectionManager = (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+            startActivityForResult(mediaProjectionManager.createScreenCaptureIntent(), Constants.SCREEN_SHARE_REQUEST_INTENT_REQ_CODE);
+        }
+        catch (Exception e)
+        {
+            Toast.makeText(getApplicationContext(),
+                            "Could not start screen share due to failure to startActivityForResult for mediaProjectionManager screenCaptureIntent",
+                            Toast.LENGTH_SHORT)
+                    .show();
+        }
+    }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == Constants.SCREEN_SHARE_REQUEST_INTENT_REQ_CODE)
+        {
+            if (resultCode == Activity.RESULT_OK && data != null)
+            {
+                screenShareService = new ScreenShareService(this,
+                        rawOutgoingVideoStream,
+                        w,
+                        h,
+                        frameRate);
+                screenShareService.Start(resultCode, data);
+            }
+            else
+            {
+                Toast.makeText(getApplicationContext(),
+                                "User cancelled, did not give permission to capture screen",
+                                Toast.LENGTH_SHORT)
+                        .show();
+            }
+        }
+    }
+
+    private void CreateCallAgent()
+    {
         String token = tokenEditText.getText().toString();
-        try {
 
+        try
+        {
             CommunicationTokenCredential credential = new CommunicationTokenCredential(token);
-            client = new CallClient();
-            callAgent = client.createCallAgent(getApplicationContext(), credential).get();
-        } catch (Exception ex) {
+            callClient = new CallClient();
 
+            CallAgentOptions callAgentOptions = new CallAgentOptions();
+            callAgentOptions.setDisplayName("Android Quickstart User");
+
+            callAgent = callClient.createCallAgent(getApplicationContext(), credential, callAgentOptions).get();
+        }
+        catch (Exception ex)
+        {
             Toast.makeText(getApplicationContext(),
                     "Failed to create call agent",
                     Toast.LENGTH_SHORT)
@@ -104,42 +184,62 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void StartCallWithVirtualVideo(View view) {
-
-        StartCall(OutgoingVideoStreamKind.VIRTUAL);
+    public void StartCallWithVirtualVideo(View view)
+    {
+        outgoingVideoStreamType = VideoStreamType.VIRTUAL_OUTGOING;
+        StartCall();
     }
 
-    public void StartCallWithScreenShareVideo(View view) {
-
-        StartCall(OutgoingVideoStreamKind.SCREEN_SHARE);
+    public void StartCallWithScreenShareVideo(View view)
+    {
+        outgoingVideoStreamType = VideoStreamType.SCREEN_SHARE_OUTGOING;
+        StartCall();
     }
 
-    private void StartCall(OutgoingVideoStreamKind outgoingVideoStreamKind) {
-
-        if (callInProgress) {
-
+    private void StartCall()
+    {
+        if (callInProgress)
+        {
             return;
         }
 
-        String meetingLink = meetingUrlEditText.getText().toString();
+        callInProgress = true;
+        if (callClient == null)
+        {
+            CreateCallAgent();
+        }
 
-        CreateAgent();
-        VideoOptions videoOptions = CreateVideoOptions(outgoingVideoStreamKind);
-        JoinCallOptions joinCallOptions = new JoinCallOptions();
-        joinCallOptions.setVideoOptions(videoOptions);
+        IncomingVideoOptions incomingVideoOptions = new IncomingVideoOptions()
+                .setStreamType(VideoStreamType.RAW_INCOMING);
+
+        OutgoingVideoOptions outgoingVideoOptions = CreateOutgoingVideoOptions();
+
+        JoinCallOptions joinCallOptions = new JoinCallOptions()
+                .setIncomingVideoOptions(incomingVideoOptions)
+                .setOutgoingVideoOptions(outgoingVideoOptions);
+
+        String meetingLink = meetingUrlEditText.getText().toString();
         JoinMeetingLocator locator = new TeamsMeetingLinkLocator(meetingLink);
 
-        try {
-
+        try
+        {
             call = callAgent.join(getApplicationContext(), locator, joinCallOptions);
             callInProgress = true;
-        } catch (CallingCommunicationException ex) {
-
+        }
+        catch (CallingCommunicationException ex)
+        {
             runOnUiThread(() ->
                     Toast.makeText(getApplicationContext(),
-                            String.format("StartCall: %s", ex.getMessage()),
+                            "Unexpected error while starting the call",
                             Toast.LENGTH_LONG)
                             .show());
+        }
+
+        if (call != null)
+        {
+            AddRemoteParticipantList(call.getRemoteParticipants());
+
+            call.addOnRemoteParticipantsUpdatedListener(this::OnRemoteParticipantsUpdated);
         }
 
         Toast.makeText(getApplicationContext(),
@@ -148,72 +248,267 @@ public class MainActivity extends AppCompatActivity {
                 .show();
     }
 
-    private VideoOptions CreateVideoOptions(OutgoingVideoStreamKind outgoingVideoStreamKind) {
+    private void OnRemoteParticipantsUpdated(ParticipantsUpdatedEvent event)
+    {
+        AddRemoteParticipantList(event.getAddedParticipants());
 
-        frameGenerator = new FrameGenerator();
-        options = CreateRawOutgoingVideoStreamOptions(frameGenerator);
+        for (RemoteParticipant remoteParticipant : event.getRemovedParticipants())
+        {
+            remoteParticipant.removeOnVideoStreamStateChangedListener(this::OnVideoStreamStateChanged);
+        }
+    }
 
-        if (outgoingVideoStreamKind == OutgoingVideoStreamKind.VIRTUAL) {
+    private void AddRemoteParticipantList(List<RemoteParticipant> remoteParticipantList)
+    {
+        for (RemoteParticipant remoteParticipant : remoteParticipantList)
+        {
+            for (IncomingVideoStream incomingVideoStream : remoteParticipant.getIncomingVideoStreams())
+            {
+                OnIncomingVideoStreamStateChanged(incomingVideoStream);
+            }
 
-            outgoingVideoStream = new VirtualRawOutgoingVideoStream(options);
-        } else {
+            remoteParticipant.addOnVideoStreamStateChangedListener(this::OnVideoStreamStateChanged);
+        }
+    }
 
-            outgoingVideoStream = new ScreenShareRawOutgoingVideoStream(options);
+    private VideoStreamFormat CreateVideoStreamFormat()
+    {
+        w = 640;
+        h = 360;
+        frameRate = 30;
+
+        VideoStreamFormat videoStreamFormat = new VideoStreamFormat();
+        videoStreamFormat.setPixelFormat(VideoStreamPixelFormat.RGBA);
+        videoStreamFormat.setFramesPerSecond(frameRate);
+
+        switch (outgoingVideoStreamType)
+        {
+            case VIRTUAL_OUTGOING:
+                videoStreamFormat.setResolution(VideoStreamResolution.P360);
+                break;
+            case SCREEN_SHARE_OUTGOING:
+                GetDisplayValues();
+                videoStreamFormat.setWidth(w);
+                videoStreamFormat.setHeight(h);
+                break;
         }
 
-        return new VideoOptions(new OutgoingVideoStream[] { outgoingVideoStream });
+        videoStreamFormat.setStride1(w * 4);
+
+        return videoStreamFormat;
     }
 
-    private RawOutgoingVideoStreamOptions CreateRawOutgoingVideoStreamOptions(FrameGenerator frameGenerator) {
+    private OutgoingVideoOptions CreateOutgoingVideoOptions()
+    {
+        VideoStreamFormat videoFormat = CreateVideoStreamFormat();
 
-        width = 1280;
-        height = 720;
+        RawOutgoingVideoStreamOptions rawOutgoingVideoStreamOptions = new RawOutgoingVideoStreamOptions();
+        rawOutgoingVideoStreamOptions.setFormats(Arrays.asList(videoFormat));
 
-        VideoFormat videoFormat = new VideoFormat();
-        videoFormat.setWidth(width);
-        videoFormat.setHeight(height);
-        videoFormat.setPixelFormat(PixelFormat.RGBA);
-        videoFormat.setVideoFrameKind(VideoFrameKind.VIDEO_SOFTWARE);
-        videoFormat.setFramesPerSecond(30);
-        videoFormat.setStride1(width * 4);
+        switch (outgoingVideoStreamType)
+        {
+            case VIRTUAL_OUTGOING:
+                VirtualOutgoingVideoStream virtualOutgoingVideoStream =
+                        new VirtualOutgoingVideoStream(rawOutgoingVideoStreamOptions);
+                virtualOutgoingVideoStream.addOnStateChangedListener(this::OnVideoStreamStateChanged);
+                virtualOutgoingVideoStream.addOnFormatChangedListener(this::OnVideoStreamFormatChanged);
+                rawOutgoingVideoStream = virtualOutgoingVideoStream;
 
-        RawOutgoingVideoStreamOptions options = new RawOutgoingVideoStreamOptions();
-        options.setVideoFormats(Arrays.asList(videoFormat));
-        options.addOnVideoFrameSenderChangedListener(frameGenerator);
+                break;
+            case SCREEN_SHARE_OUTGOING:
+                ScreenShareOutgoingVideoStream screenShareOutgoingVideoStream =
+                        new ScreenShareOutgoingVideoStream(rawOutgoingVideoStreamOptions);
+                screenShareOutgoingVideoStream.addOnStateChangedListener(this::OnVideoStreamStateChanged);
+                screenShareOutgoingVideoStream.addOnFormatChangedListener(this::OnVideoStreamFormatChanged);
+                rawOutgoingVideoStream = screenShareOutgoingVideoStream;
 
-        return options;
+                break;
+        }
+
+        return new OutgoingVideoOptions()
+                .setOutgoingVideoStreams(Arrays.asList(rawOutgoingVideoStream));
     }
 
-    public void EndCall(View view) {
+    private void OnVideoStreamStateChanged(VideoStreamStateChangedEvent event)
+    {
+        CallVideoStream callVideoStream = event.getStream();
 
-        if (!callInProgress) {
+        switch (callVideoStream.getDirection())
+        {
+            case OUTGOING:
+                OnOutgoingVideoStreamStateChanged((OutgoingVideoStream)callVideoStream);
+                break;
+            case INCOMING:
+                OnIncomingVideoStreamStateChanged((IncomingVideoStream)callVideoStream);
+                break;
+        }
+    }
 
+    private void OnOutgoingVideoStreamStateChanged(OutgoingVideoStream outgoingVideoStream)
+    {
+        switch (outgoingVideoStream.getState())
+        {
+            case STARTED:
+                switch (outgoingVideoStream.getType())
+                {
+                    case VIRTUAL_OUTGOING:
+                        if (videoFrameSender == null)
+                        {
+                            videoFrameSender = new VideoFrameSender(this, rawOutgoingVideoStream);
+                            videoFrameSender.Start();
+                        }
+
+                        break;
+                    case SCREEN_SHARE_OUTGOING:
+                        if (screenShareService == null)
+                        {
+                            GetScreenSharePermissions();
+                        }
+
+                        break;
+                }
+
+                break;
+            case STOPPED:
+                switch (outgoingVideoStream.getType())
+                {
+                    case VIRTUAL_OUTGOING:
+                        if (videoFrameSender != null)
+                        {
+                            videoFrameSender.Stop();
+                        }
+
+                        break;
+                    case SCREEN_SHARE_OUTGOING:
+                        if (screenShareService != null)
+                        {
+                            screenShareService.Stop();
+                        }
+
+                        break;
+                }
+
+                break;
+        }
+    }
+
+    private void OnIncomingVideoStreamStateChanged(IncomingVideoStream incomingVideoStream)
+    {
+        switch (incomingVideoStream.getState())
+        {
+            case AVAILABLE:
+            {
+                if (!incomingVideoStreamMap.containsKey(incomingVideoStream.getId()))
+                {
+                    RawIncomingVideoStream rawIncomingVideoStream = (RawIncomingVideoStream) incomingVideoStream;
+                    rawIncomingVideoStream.addOnRawVideoFrameReceivedListener(this::OnVideoFrameReceived);
+                    rawIncomingVideoStream.start();
+
+                    incomingVideoStreamMap.put(incomingVideoStream.getId(), incomingVideoStream);
+                }
+
+                break;
+            }
+            case NOT_AVAILABLE:
+                if (incomingVideoStreamMap.containsKey(incomingVideoStream.getId()))
+                {
+                    RawIncomingVideoStream rawIncomingVideoStream =
+                            (RawIncomingVideoStream) incomingVideoStreamMap.get(incomingVideoStream.getId());
+                    rawIncomingVideoStream.removeOnRawVideoFrameReceivedListener(this::OnVideoFrameReceived);
+
+                    incomingVideoStreamMap.remove(incomingVideoStream.getId());
+
+                    videoFrameRenderer.ClearView();
+                }
+
+                break;
+        }
+    }
+
+    private void OnVideoFrameReceived(RawVideoFrameReceivedEvent event)
+    {
+        RawVideoFrame rawVideoFrame = event.getFrame();
+        RawVideoFrameBuffer rawVideoFrameBuffer = (RawVideoFrameBuffer) rawVideoFrame;
+        videoFrameRenderer.RenderVideoFrame(rawVideoFrameBuffer);
+    }
+
+    private void OnVideoStreamFormatChanged(VideoStreamFormatChangedEvent event)
+    {
+        VideoStreamFormat videoFormat = event.getFormat();
+    }
+
+    public void EndCall(View view)
+    {
+        if (!callInProgress)
+        {
             return;
         }
 
         Executors.newCachedThreadPool().submit(() -> {
-            try {
+            try
+            {
+                if (call != null)
+                {
+                    call.removeOnRemoteParticipantsUpdatedListener(this::OnRemoteParticipantsUpdated);
 
-                if (call != null) {
+                    if (rawOutgoingVideoStream != null)
+                    {
+                        call.stopVideo(this, rawOutgoingVideoStream).get();
+                    }
 
-                    frameGenerator.StopFrameIterator();
-                    call.stopVideo(this, outgoingVideoStream);
+                    if (videoFrameSender != null)
+                    {
+                        videoFrameSender.Stop();
+                        videoFrameSender = null;
+                    }
+
+                    if (screenShareService != null)
+                    {
+                        screenShareService.Stop();
+                        screenShareService = null;
+                    }
+
                     call.hangUp(new HangUpOptions()).get();
                 }
 
+                call = null;
                 callInProgress = false;
-            } catch (ExecutionException | InterruptedException ex) {
-
+                incomingVideoStreamMap.clear();
+            }
+            catch (ExecutionException | InterruptedException ex)
+            {
                 Toast.makeText(getApplicationContext(),
-                        "EndCall: ",
-                        Toast.LENGTH_SHORT)
+                                "Unexpected error while ending the call",
+                                Toast.LENGTH_LONG)
                         .show();
             }
         });
 
         Toast.makeText(getApplicationContext(),
-                "Stopped",
-                Toast.LENGTH_LONG)
+                        "Stopped",
+                        Toast.LENGTH_LONG)
                 .show();
+    }
+
+    private void GetDisplayValues()
+    {
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        w = displayMetrics.widthPixels;
+        h = displayMetrics.heightPixels;
+
+        if (h > maxHeight)
+        {
+            double percentage = Math.abs((maxHeight / h) - 1);
+            w = (int)Math.ceil((w * percentage));
+            h = (int)maxHeight;
+        }
+
+        if (w > maxWidth)
+        {
+            double percentage = Math.abs((maxWidth / w) - 1);
+            h = (int)Math.ceil((h * percentage));
+            w = (int)maxWidth;
+        }
     }
 }
