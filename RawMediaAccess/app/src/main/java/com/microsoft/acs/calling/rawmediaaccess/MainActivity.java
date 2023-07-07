@@ -69,6 +69,7 @@ public class MainActivity extends AppCompatActivity
     private CallAgent callAgent;
     private Call call;
     private RawOutgoingVideoStream rawOutgoingVideoStream;
+    private VideoFrameRenderer incomingVideoFrameRenderer;
     private ScreenCaptureService screenCaptureService;
     private VideoStreamType outgoingVideoStreamType;
     private VideoFrameSender videoFrameSender;
@@ -88,8 +89,7 @@ public class MainActivity extends AppCompatActivity
 
         InitializeUIVariables();
 
-        tokenEditText.setText("eyJhbGciOiJSUzI1NiIsImtpZCI6IjVFODQ4MjE0Qzc3MDczQUU1QzJCREU1Q0NENTQ0ODlEREYyQzRDODQiLCJ4NXQiOiJYb1NDRk1kd2M2NWNLOTVjelZSSW5kOHNUSVEiLCJ0eXAiOiJKV1QifQ.eyJza3lwZWlkIjoiYWNzOmRmZjdhMmZmLWYwNmQtNDA1Mi04NWRlLTE3ZGUxYjg2OTEyNF8wMDAwMDAxOS1jZGVlLTkyYzItOTliZi1hNDNhMGQwMDgyZmMiLCJzY3AiOjE3OTIsImNzaSI6IjE2ODg2OTQ3NDciLCJleHAiOjE2ODg3ODExNDcsInJnbiI6ImFtZXIiLCJhY3NTY29wZSI6InZvaXAiLCJyZXNvdXJjZUlkIjoiZGZmN2EyZmYtZjA2ZC00MDUyLTg1ZGUtMTdkZTFiODY5MTI0IiwicmVzb3VyY2VMb2NhdGlvbiI6InVuaXRlZHN0YXRlcyIsImlhdCI6MTY4ODY5NDc0N30.UnYDr9EuvqZ7_i0Zv0-FYFOGsksHpJoAI_gJQlr8g3B3W45KR7cajYz2dBy6gQl2F7YPYJvZk9kX0ngp8R3kwFhBEEU8PWDNKeJT0iVPNkW_P-6XENbvoDSGIz64xqhzr2ITbe0fyCULB9hTRWOBGM-v3EEnbNlt1_EI8XBKnLmN7IpmEVBnoeis5BjqQlcJcs94s2f0gNk136qxAMX5lehs-n2haHqu-zH4X-M0-DuQixQdD0Lw85bVGEG5RsdplcDkhqLXe-vyhiFkRmJrcIcCHIU9R8sm3Waiwx-pCSu-RVGTLHEy4CwQOrfUAxs3TP1XlJetsTweVznX6XdHxQ");
-        meetingUrlEditText.setText("https://teams.microsoft.com/l/meetup-join/19%3ameeting_ZTNlM2M4ZDUtOGI1Zi00YmQ3LWJkMGUtM2E2OTY3ZTdmZjYx%40thread.v2/0?context=%7b%22Tid%22%3a%2272f988bf-86f1-41af-91ab-2d7cd011db47%22%2c%22Oid%22%3a%22744e8f01-fbf6-40b3-b594-00792ff4276e%22%7d");
+        incomingVideoFrameRenderer = new VideoFrameRenderer(this, videoContainer, 320, 180);
 
         incomingVideoStreamMap = new HashMap<>();
 
@@ -102,6 +102,7 @@ public class MainActivity extends AppCompatActivity
     {
         tokenEditText = findViewById(R.id.TokenEditText);
         meetingUrlEditText = findViewById(R.id.MeetingUrlEditText);
+        videoContainer = findViewById(R.id.videoContainer);
 
         outgoingVideoStreamTypeList = Arrays.asList(
                 VideoStreamType.VIRTUAL_OUTGOING,
@@ -207,6 +208,7 @@ public class MainActivity extends AppCompatActivity
         try
         {
             CommunicationTokenCredential credential = new CommunicationTokenCredential(token);
+
             callClient = new CallClient();
 
             CallAgentOptions callAgentOptions = new CallAgentOptions();
@@ -251,7 +253,6 @@ public class MainActivity extends AppCompatActivity
         try
         {
             call = callAgent.join(getApplicationContext(), locator, joinCallOptions);
-            callInProgress = true;
         }
         catch (CallingCommunicationException ex)
         {
@@ -300,8 +301,6 @@ public class MainActivity extends AppCompatActivity
 
     private VideoStreamFormat CreateVideoStreamFormat()
     {
-        w = 640;
-        h = 360;
         frameRate = 15;
 
         VideoStreamFormat videoStreamFormat = new VideoStreamFormat();
@@ -311,6 +310,8 @@ public class MainActivity extends AppCompatActivity
         switch (outgoingVideoStreamType)
         {
             case VIRTUAL_OUTGOING:
+                w = 640;
+                h = 360;
                 videoStreamFormat.setResolution(VideoStreamResolution.P360);
                 break;
             case SCREEN_SHARE_OUTGOING:
@@ -432,6 +433,7 @@ public class MainActivity extends AppCompatActivity
                 if (!incomingVideoStreamMap.containsKey(incomingVideoStream.getId()))
                 {
                     RawIncomingVideoStream rawIncomingVideoStream = (RawIncomingVideoStream) incomingVideoStream;
+                    rawIncomingVideoStream.addOnRawVideoFrameReceivedListener(this::OnRawVideoFrameReceived);
                     rawIncomingVideoStream.start();
 
                     incomingVideoStreamMap.put(incomingVideoStream.getId(), incomingVideoStream);
@@ -442,10 +444,32 @@ public class MainActivity extends AppCompatActivity
             case NOT_AVAILABLE:
                 if (incomingVideoStreamMap.containsKey(incomingVideoStream.getId()))
                 {
+                    RawIncomingVideoStream rawIncomingVideoStream = (RawIncomingVideoStream) incomingVideoStreamMap.get(incomingVideoStream.getId());
+                    rawIncomingVideoStream.removeOnRawVideoFrameReceivedListener(this::OnRawVideoFrameReceived);
+
                     incomingVideoStreamMap.remove(incomingVideoStream.getId());
                 }
 
+                incomingVideoFrameRenderer.ClearView();
                 break;
+        }
+    }
+
+    private void OnRawVideoFrameReceived(RawVideoFrameReceivedEvent event)
+    {
+        RawVideoFrame rawVideoFrame = event.getFrame();
+
+        try
+        {
+            incomingVideoFrameRenderer.RenderRawVideoFrame((RawVideoFrameBuffer) rawVideoFrame);
+        }
+        catch (Exception ex)
+        {
+            ex.printStackTrace();
+        }
+        finally
+        {
+            rawVideoFrame.close();
         }
     }
 
@@ -491,6 +515,8 @@ public class MainActivity extends AppCompatActivity
 
                 incomingVideoStreamMap.clear();
                 callInProgress = false;
+
+                incomingVideoFrameRenderer.ClearView();
             }
             catch (Exception ex)
             {

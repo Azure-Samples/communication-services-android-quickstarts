@@ -16,10 +16,10 @@ import java.util.Random;
 
 public class VideoFrameSender
 {
-    private Context context;
-    private RawOutgoingVideoStream rawOutgoingVideoStream;
-    private Thread frameIteratorThread;
+    private final RawOutgoingVideoStream rawOutgoingVideoStream;
     private final Random random = new Random();
+    private final Context context;
+    private Thread frameIteratorThread;
     private volatile boolean stopFrameIterator = false;
 
     public VideoFrameSender(Context context, RawOutgoingVideoStream rawOutgoingVideoStream)
@@ -42,6 +42,7 @@ public class VideoFrameSender
     private void SendRandomVideoFrame()
     {
         RawVideoFrame rawVideoFrame = GenerateRawVideoFrame();
+
         try
         {
             rawOutgoingVideoStream.sendRawVideoFrame(rawVideoFrame).get();
@@ -65,17 +66,18 @@ public class VideoFrameSender
 
     private RawVideoFrame GenerateRawVideoFrame()
     {
-        VideoStreamFormat videoStreamFormat = rawOutgoingVideoStream.getFormat();
-        int w = videoStreamFormat.getWidth();
-        int h = videoStreamFormat.getHeight();
+        VideoStreamFormat format = rawOutgoingVideoStream.getFormat();
+        int w = format.getWidth();
+        int h = format.getHeight();
         int rgbaCapacity = w * h * 4;
+        int rgbaStride = w * 4;
 
         ByteBuffer rgbaBuffer = ByteBuffer.allocateDirect(rgbaCapacity);
         rgbaBuffer.order(ByteOrder.nativeOrder());
 
-        int bandsCount = random.nextInt(15) + 1;
         int bandBegin = 0;
-        int bandThickness = h * w * 4 / bandsCount;
+        int bandsCount = random.nextInt(15) + 1;
+        int bandThickness = rgbaStride * h / bandsCount;
 
         for (int i = 0; i < bandsCount; ++i)
         {
