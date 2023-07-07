@@ -7,8 +7,6 @@ import com.azure.android.communication.calling.VideoStreamState;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 
 public abstract class CaptureService
 {

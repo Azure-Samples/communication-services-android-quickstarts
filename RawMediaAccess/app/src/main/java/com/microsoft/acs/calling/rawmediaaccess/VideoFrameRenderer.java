@@ -6,21 +6,16 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.PorterDuff;
 import android.util.DisplayMetrics;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.core.view.ViewCompat;
 
 import com.azure.android.communication.calling.RawVideoFrameBuffer;
 import com.azure.android.communication.calling.VideoStreamFormat;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public class VideoFrameRenderer implements SurfaceHolder.Callback

@@ -32,7 +32,7 @@ public class VideoFrameSender
     {
         while (!stopFrameIterator)
         {
-            if (CanSendFrames())
+            if (CanSendRawVideoFrames())
             {
                 SendRandomVideoFrame();
             }
@@ -124,7 +124,7 @@ public class VideoFrameSender
         }
     }
 
-    private boolean CanSendFrames()
+    private boolean CanSendRawVideoFrames()
     {
         return rawOutgoingVideoStream != null &&
                 rawOutgoingVideoStream.getFormat() != null &&

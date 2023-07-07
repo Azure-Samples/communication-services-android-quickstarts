@@ -91,8 +91,6 @@ public class MainActivity extends AppCompatActivity
 
         incomingVideoFrameRenderer = new VideoFrameRenderer(this, videoContainer, 320, 180);
 
-        incomingVideoStreamMap = new HashMap<>();
-
         GetAllPermissions();
 
         setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
@@ -100,6 +98,8 @@ public class MainActivity extends AppCompatActivity
 
     private void InitializeUIVariables()
     {
+        incomingVideoStreamMap = new HashMap<>();
+
         tokenEditText = findViewById(R.id.TokenEditText);
         meetingUrlEditText = findViewById(R.id.MeetingUrlEditText);
         videoContainer = findViewById(R.id.videoContainer);
@@ -203,11 +203,9 @@ public class MainActivity extends AppCompatActivity
 
     private void CreateCallAgent()
     {
-        String token = tokenEditText.getText().toString();
-
         try
         {
-            CommunicationTokenCredential credential = new CommunicationTokenCredential(token);
+            CommunicationTokenCredential credential = new CommunicationTokenCredential(tokenEditText.getText().toString());
 
             callClient = new CallClient();
 
@@ -247,8 +245,7 @@ public class MainActivity extends AppCompatActivity
                 .setIncomingVideoOptions(incomingVideoOptions)
                 .setOutgoingVideoOptions(outgoingVideoOptions);
 
-        String meetingLink = meetingUrlEditText.getText().toString();
-        JoinMeetingLocator locator = new TeamsMeetingLinkLocator(meetingLink);
+        JoinMeetingLocator locator = new TeamsMeetingLinkLocator(meetingUrlEditText.getText().toString());
 
         try
         {
@@ -392,10 +389,6 @@ public class MainActivity extends AppCompatActivity
                         {
                             GetScreenSharePermissions();
                         }
-                        else
-                        {
-                            screenCaptureService.Start();
-                        }
 
                         break;
                 }
@@ -441,6 +434,9 @@ public class MainActivity extends AppCompatActivity
 
                 break;
             }
+            case STOPPED:
+                incomingVideoFrameRenderer.ClearView();
+                break;
             case NOT_AVAILABLE:
                 if (incomingVideoStreamMap.containsKey(incomingVideoStream.getId()))
                 {
@@ -450,7 +446,6 @@ public class MainActivity extends AppCompatActivity
                     incomingVideoStreamMap.remove(incomingVideoStream.getId());
                 }
 
-                incomingVideoFrameRenderer.ClearView();
                 break;
         }
     }
