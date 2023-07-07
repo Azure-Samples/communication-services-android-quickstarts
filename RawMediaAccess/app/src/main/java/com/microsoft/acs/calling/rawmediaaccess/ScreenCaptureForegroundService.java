@@ -15,7 +15,6 @@ import android.content.pm.ServiceInfo;
 import android.graphics.PixelFormat;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
-import android.media.Image;
 import android.media.ImageReader;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
@@ -31,9 +30,7 @@ import android.view.WindowManager;
 
 import androidx.core.app.NotificationCompat;
 
-import java.nio.ByteBuffer;
-
-public class ScreenCaptureForegroundService extends Service implements ImageReader.OnImageAvailableListener
+public class ScreenCaptureForegroundService extends Service
 {
     private WindowManager windowManager;
     private Surface surface;
@@ -107,41 +104,13 @@ public class ScreenCaptureForegroundService extends Service implements ImageRead
         ShowForegroundServiceNotification();
         SetDisplayValues();
         Initialize(resultCode, intentData);
-        SendOnScreenShareServiceStateChangedEvent(ScreenCaptureServiceState.STARTED, null);
     }
 
     private void Stop()
     {
-        SendOnScreenShareServiceStateChangedEvent(ScreenCaptureServiceState.STOPPED, null);
         Dispose();
         stopForeground(true);
         stopSelf();
-    }
-
-    @Override
-    public void onImageAvailable(ImageReader reader)
-    {
-        Image image = reader.acquireLatestImage();
-        if (image != null)
-        {
-            final Image.Plane[] planes = image.getPlanes();
-            if (planes.length > 0)
-            {
-                Image.Plane plane = planes[0];
-
-                final ByteBuffer buffer = plane.getBuffer();
-                int pixelStride = plane.getPixelStride();
-                int rowStride = plane.getRowStride();
-
-                IScreenCaptureListener screenCaptureServiceListener = ScreenCaptureListenerBridge.GetListener();
-                if (screenCaptureServiceListener != null)
-                {
-                    screenCaptureServiceListener.onFrameReady(buffer, w, h, rowStride, pixelStride, 0);
-                }
-            }
-
-            image.close();
-        }
     }
 
     private void Initialize(int resultCode, Intent intentData)
@@ -214,21 +183,11 @@ public class ScreenCaptureForegroundService extends Service implements ImageRead
         }
     }
 
-    private void SendOnScreenShareServiceStateChangedEvent(ScreenCaptureServiceState state, String message)
-    {
-        IScreenCaptureListener screenCaptureServiceListener = ScreenCaptureListenerBridge.GetListener();
-        if (screenCaptureServiceListener != null)
-        {
-            ScreenCaptureStateChangedEvent event = new ScreenCaptureStateChangedEvent(state, message);
-            screenCaptureServiceListener.onScreenShareServiceStateChangedEvent(event);
-        }
-    }
-
     @SuppressWarnings({"WrongConstant"})
     private void CreateSurface()
     {
         imageReader = ImageReader.newInstance(w, h, PixelFormat.RGBA_8888, 2);
-        imageReader.setOnImageAvailableListener(this, null);
+        imageReader.setOnImageAvailableListener(ScreenCaptureService.GetListener(), null);
         surface = imageReader.getSurface();
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
@@ -237,7 +196,10 @@ public class ScreenCaptureForegroundService extends Service implements ImageRead
             {
                 surface.setFrameRate(frameRate, FRAME_RATE_COMPATIBILITY_FIXED_SOURCE);
             }
-            catch (Exception ex) { }
+            catch (Exception ex)
+            {
+                ex.printStackTrace();
+            }
         }
     }
 
@@ -294,28 +256,6 @@ public class ScreenCaptureForegroundService extends Service implements ImageRead
         {
             orientationEventListener.disable();
             orientationEventListener = null;
-        }
-    }
-
-    private static class ScreenCaptureStateChangedEvent implements IScreenCaptureServiceStateEvent
-    {
-        private final ScreenCaptureServiceState screenCaptureServiceState;
-        private final String message;
-
-        public ScreenCaptureStateChangedEvent(ScreenCaptureServiceState state, String message)
-        {
-            this.screenCaptureServiceState = state;
-            this.message = message;
-        }
-
-        public ScreenCaptureServiceState GetScreenCaptureServiceState()
-        {
-            return screenCaptureServiceState;
-        }
-
-        public String GetMessage()
-        {
-            return message;
         }
     }
 

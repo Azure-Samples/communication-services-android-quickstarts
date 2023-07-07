@@ -7,100 +7,76 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity"
     android:id="@+id/main_container"
+    android:padding="20dp"
     >
     <LinearLayout
         android:id="@+id/ControlsContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
+        app:layout_constraintTop_toTopOf="parent"
         >
         <EditText
             android:id="@+id/TokenEditText"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
+            android:layout_height="40dp"
             android:hint="ACS Token"
             android:paddingLeft="15dp"
             android:paddingRight="15dp"
-            android:layout_marginTop="20dp"
-            android:layout_marginLeft="20dp"
-            android:layout_marginRight="20dp"
             android:background="@drawable/acs_spool_ui_blue_border"
+            android:singleLine="true"
             />
 
         <EditText
             android:id="@+id/MeetingUrlEditText"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
+            android:layout_height="40dp"
             android:hint="Teams Meeting Link"
             android:paddingLeft="15dp"
             android:paddingRight="15dp"
-            android:layout_marginTop="20dp"
-            android:layout_marginLeft="20dp"
-            android:layout_marginRight="20dp"
+            android:layout_marginTop="10dp"
             android:background="@drawable/acs_spool_ui_blue_border"
+            android:singleLine="true"
             />
 
-        <Button
-            android:id="@+id/StartCallWithVirtualVideo"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingTop="10dp"
-            android:paddingBottom="10dp"
-            android:layout_marginTop="20dp"
-            android:layout_marginLeft="20dp"
-            android:layout_marginRight="20dp"
-            android:background="@android:color/holo_green_light"
-            android:text="Start Call using Virtual Video"
-            android:onClick="StartCallWithVirtualVideo"
-            />
+            android:orientation="horizontal"
+            android:weightSum="2"
+            >
+            <Button
+                android:id="@+id/StartCall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginTop="10dp"
+                android:layout_marginRight="5dp"
+                android:background="@android:color/holo_green_light"
+                android:text="Start Call"
+                android:onClick="StartCall"
+                />
 
-        <Button
-            android:id="@+id/StartCallWithScreenShareVideo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingTop="10dp"
-            android:paddingBottom="10dp"
-            android:layout_marginTop="20dp"
-            android:layout_marginLeft="20dp"
-            android:layout_marginRight="20dp"
-            android:background="@android:color/holo_green_light"
-            android:text="Start Call using screenShare Video"
-            android:onClick="StartCallWithScreenShareVideo"
-            android:lineSpacingExtra="2dp"
-            />
+            <Button
+                android:id="@+id/EndCall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginTop="10dp"
+                android:layout_marginLeft="5dp"
+                android:background="@android:color/holo_red_light"
+                android:text="End Call"
+                android:onClick="EndCall"
+                />
+        </LinearLayout>
 
-        <Button
-            android:id="@+id/EndCall"
+        <Spinner
+            android:id="@+id/outgoingVideoStreamTypePicker"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:layout_marginLeft="20dp"
-            android:layout_marginRight="20dp"
-            android:background="@android:color/holo_red_light"
-            android:text="End Call"
-            android:onClick="EndCall"
-            />
+            android:layout_height="40dp"
+            android:layout_marginTop="10dp"
+            >
+
+        </Spinner>
     </LinearLayout>
-
-    <!--SurfaceView
-        android:id="@+id/OutgoingVideoSurfaceView"
-        android:layout_width="320dp"
-        android:layout_height="180dp"
-        app:layout_constraintRight_toRightOf="@+id/main_container"
-        app:layout_constraintLeft_toLeftOf="@+id/main_container"
-        app:layout_constraintBottom_toBottomOf="@+id/main_container"
-        android:layout_marginBottom="30dp"
-        /-->
-
-    <SurfaceView
-        android:id="@+id/IncomingVideoSurfaceView"
-        android:layout_width="320dp"
-        android:layout_height="180dp"
-        app:layout_constraintRight_toRightOf="@+id/main_container"
-        app:layout_constraintLeft_toLeftOf="@+id/main_container"
-        app:layout_constraintTop_toBottomOf="@+id/ControlsContainer"
-        android:layout_marginBottom="20dp"
-        android:layout_marginTop="20dp"
-        android:visibility="gone"
-        />
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -73,39 +73,24 @@ public class VideoFrameSender
         ByteBuffer rgbaBuffer = ByteBuffer.allocateDirect(rgbaCapacity);
         rgbaBuffer.order(ByteOrder.nativeOrder());
 
-        GenerateRawVideoFrame(rgbaBuffer, w, h, rgbaCapacity);
+        int bandsCount = random.nextInt(15) + 1;
+        int bandBegin = 0;
+        int bandThickness = h * w * 4 / bandsCount;
+
+        for (int i = 0; i < bandsCount; ++i)
+        {
+            byte greyValue = (byte) random.nextInt(254);
+            java.util.Arrays.fill(rgbaBuffer.array(), bandBegin, bandBegin + bandThickness, greyValue);
+            bandBegin += bandThickness;
+        }
+
+        rgbaBuffer.rewind();
 
         RawVideoFrameBuffer rawVideoFrameBuffer = new RawVideoFrameBuffer();
         rawVideoFrameBuffer.setBuffers(Collections.singletonList(rgbaBuffer));
         rawVideoFrameBuffer.setStreamFormat(rawOutgoingVideoStream.getFormat());
 
         return rawVideoFrameBuffer;
-    }
-
-    private void GenerateRawVideoFrame(ByteBuffer rgbaBuffer, int w, int h, int rgbaCapacity)
-    {
-        byte rVal = (byte)random.nextInt(255);
-        byte gVal = (byte)random.nextInt(255);
-        byte bVal = (byte)random.nextInt(255);
-        byte aVal = (byte)255;
-
-        byte[] rgbaArrayBuffer = new byte[rgbaCapacity];
-
-        int rgbaStride = w * 4;
-
-        for (int y = 0; y < h; y++)
-        {
-            for (int x = 0; x < rgbaStride; x += 4)
-            {
-                rgbaArrayBuffer[(w * 4 * y) + x + 0] = rVal;
-                rgbaArrayBuffer[(w * 4 * y) + x + 1] = gVal;
-                rgbaArrayBuffer[(w * 4 * y) + x + 2] = bVal;
-                rgbaArrayBuffer[(w * 4 * y) + x + 3] = aVal;
-            }
-        }
-
-        rgbaBuffer.put(rgbaArrayBuffer);
-        rgbaBuffer.rewind();
     }
 
     public void Start()
