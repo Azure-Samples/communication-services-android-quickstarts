@@ -18,6 +18,9 @@ Azure Communication Services enable developers to add communication capabilities
 5. [Record Calls](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/voice-video-calling/get-started-call-recording)
 6. [Handle Calling Events](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/voice-video-calling/handle-calling-events)
 7. [Raw media Access](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/voice-video-calling/get-started-raw-media-access)
+8. [Join Room Calls in your Android App](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/rooms/join-rooms-call)
+
+
 
 ### Chat SDK Quickstarts
 1. [Add Chat to your App](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/chat/get-started)
