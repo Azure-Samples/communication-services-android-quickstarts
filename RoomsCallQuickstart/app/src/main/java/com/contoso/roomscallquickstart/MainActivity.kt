@@ -99,7 +99,6 @@ class MainActivity : AppCompatActivity() {
                 val credential = CommunicationTokenCredential(userToken)
                 callAgent = CallClient().createCallAgent(applicationContext, credential).get()
             } catch (ex: Exception) {
-                Log.d("Room", ex.toString())
                 Toast.makeText(
                     applicationContext,
                     "Failed to create call callAgent.",
