@@ -17,7 +17,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.RoomsCallQuickstart">
+        android:theme="@style/Theme.AppTheme">
 
         <!--Our Calling SDK depends on the Apache HTTP SDK.
     When targeting Android SDK 28+, this library needs to be explicitly referenced.
