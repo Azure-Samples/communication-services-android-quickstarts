@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
 
     Button switchSourceButton;
     RadioButton acsCall, cteCall, oneToOneCall, groupCall;
-    private boolean isCte = true;
+    private boolean isCte = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,9 +113,9 @@ public class MainActivity extends AppCompatActivity {
 
         acsCall = findViewById(R.id.acs_call);
         acsCall.setOnClickListener(this::onCallTypeSelected);
+        acsCall.setChecked(true);
         cteCall = findViewById(R.id.cte_call);
         cteCall.setOnClickListener(this::onCallTypeSelected);
-        cteCall.setChecked(true);
 
         setupButtonListener();
         Button hangupButton = findViewById(R.id.hang_up);
@@ -148,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void createAgent() {
         Context context = this.getApplicationContext();
-        String userToken = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjVFODQ4MjE0Qzc3MDczQUU1QzJCREU1Q0NENTQ0ODlEREYyQzRDODQiLCJ4NXQiOiJYb1NDRk1kd2M2NWNLOTVjelZSSW5kOHNUSVEiLCJ0eXAiOiJKV1QifQ.eyJza3lwZWlkIjoiYWNzOmVmZDNjMjI5LWIyMTItNDM3YS05NDVkLTkyMzI2ZjEzYTFiZV8wMDAwMDAxYS1jZDllLWQ4ODAtMGQ4Yi0wODQ4MjIwMGJmMjAiLCJzY3AiOjE3OTIsImNzaSI6IjE2OTI5ODQ0ODkiLCJleHAiOjE2OTMwNzA4ODksInJnbiI6ImFtZXIiLCJhY3NTY29wZSI6InZvaXAiLCJyZXNvdXJjZUlkIjoiZWZkM2MyMjktYjIxMi00MzdhLTk0NWQtOTIzMjZmMTNhMWJlIiwicmVzb3VyY2VMb2NhdGlvbiI6InVuaXRlZHN0YXRlcyIsImlhdCI6MTY5Mjk4NDQ4OX0.JfEsYxnMxc9G3cScHEvi_QXQu0aeQk7aSRPSUvSd0QgEfCcQQ8D2XJm0U21AuWpzq50LHEm1FnHU1mU5VbFFy7hWO3UWBz2GYErwTRKTcRUsvwH_SBi46Nf11saYYhfHLYb3S6WT1mnVfJm2-PVWqPwK_SjCbiUypEEWPM4dgohsLiIiVBGoGB-OhcF-B7L51orqgy883vQfevPlQicudr3J8noh7nn5wVGRqkJjyr-jkKPIdjT9iMLssbpfMqpi5DIgYapKYGHSzFCrfMW0PsheAwL4b5CW9ml_fJdr5ooCepLFvwFmYaT7nlF5rWQ7SKXr8MhnFILZwUs3pt7lSA";
+        String userToken = "<USER_ACCESS_TOKEN>";
         try {
             CommunicationTokenCredential credential = new CommunicationTokenCredential(userToken);
             CallClient callClient = new CallClient();
@@ -161,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void createTeamsAgent() {
         Context context = this.getApplicationContext();
-        String userToken = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjVFODQ4MjE0Qzc3MDczQUU1QzJCREU1Q0NENTQ0ODlEREYyQzRDODQiLCJ4NXQiOiJYb1NDRk1kd2M2NWNLOTVjelZSSW5kOHNUSVEiLCJ0eXAiOiJKV1QifQ.eyJza3lwZWlkIjoib3JnaWQ6YjA0YmQ4N2QtYTY4Yi00ODc2LTk2OTYtYjNhMjkwOWYzZjcxIiwic2NwIjoxMDI0LCJjc2kiOiIxNjkyOTg0MjY0IiwiZXhwIjoxNjkyOTg5MTU5LCJyZ24iOiJhbWVyIiwidGlkIjoiYmM2MWY0ZmMtMjZkNy00MTFlLTkxYTktNGMxNDY5MWRhYmRmIiwiYWNzU2NvcGUiOiJ2b2lwLGNoYXQiLCJyZXNvdXJjZUlkIjoiZWZkM2MyMjktYjIxMi00MzdhLTk0NWQtOTIzMjZmMTNhMWJlIiwiaWF0IjoxNjkyOTg0NTY0fQ.R2Pryev1UqS1v0M-sFeRFQbtnfNkyqI_8eEhI0WGZFxco4uT90JDo2jbaQy-7fxS5CrPUEktLP0T8a_dCsHa-tv-P0T0cV13SM5ry8fbaV4zAPW78OROLt2oqYTW-JhA7JHVM2DzFP32IYh8jQYl22OMZO_rsbVkP9rQg4EdyKweKKNtxxeHwNCLJfDWMXmQnE8ZcWjTGSu-9sbjnXijRobjgQxLkqKgPGkcoQh56nca-BvR2Wr_f5GBk-xzSrW2KRThSWEyPcGIXMjRKHjPRDIWUqSfCNNEZvMeNk4HGvK9b6k8mo7eucA7IWvoiaXQqbUz_IGnZ9U4AkZSxxfC5A";
+        String userToken = "<USER_ACCESS_TOKEN>";
         try {
             CommunicationTokenCredential credential = new CommunicationTokenCredential(userToken);
             CallClient callClient = new CallClient();
