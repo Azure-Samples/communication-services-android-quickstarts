@@ -95,14 +95,12 @@ public class MainActivity extends AppCompatActivity {
                     teamsMeetingLinkLocator,
                     options);
             teamsCall.addOnStateChangedListener((p -> setCallStatus(teamsCall.getState().toString())));
-            teamsCall.addOnIsRecordingActiveChangedListener(p -> setRecordingStatus(teamsCall.isRecordingActive()));
         }else {
             call = agent.join(
                     getApplicationContext(),
                     teamsMeetingLinkLocator,
                     options);
             call.addOnStateChangedListener(p -> setCallStatus(call.getState().toString()));
-            call.addOnIsRecordingActiveChangedListener(p -> setRecordingStatus(call.isRecordingActive()));
         }
     }
 
