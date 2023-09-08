@@ -101,12 +101,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         getAllPermissions();
-        createAgent();
-        createTeamsAgent();
+        setupAgent();
         setDeviceManager();
-
-        handleIncomingCall();
-        handleTeamsIncomingCall();
 
         switchSourceButton = findViewById(R.id.switch_source);
         switchSourceButton.setOnClickListener(l -> switchSource());
@@ -119,7 +115,6 @@ public class MainActivity extends AppCompatActivity {
         cteCall = findViewById(R.id.cte_call);
         cteCall.setOnClickListener(this::onCallTypeSelected);
 
-        setupButtonListener();
         Button hangupButton = findViewById(R.id.hang_up);
         hangupButton.setOnClickListener(l -> hangUp());
         Button startVideo = findViewById(R.id.show_preview);
@@ -181,6 +176,25 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception ex) {
             Toast.makeText(context, "Failed to create teams call agent.", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void setupAgent(){
+        if(isCte){
+            if (callAgent != null) {
+                callAgent.dispose();
+                callAgent = null;
+            }
+            createTeamsAgent();
+            handleTeamsIncomingCall();
+        }else{
+            if (teamsCallAgent != null) {
+                teamsCallAgent.dispose();
+                teamsCallAgent = null;
+            }
+            createAgent();
+            handleIncomingCall();
+        }
+        setupButtonListener();
     }
 
     private void handleIncomingCall() {
@@ -645,13 +659,13 @@ public class MainActivity extends AppCompatActivity {
             case R.id.acs_call:
                 if(checked){
                     isCte = false;
-                    setupButtonListener();
+                    setupAgent();
                 }
                 break;
             case R.id.cte_call:
                 if(checked){
                     isCte = true;
-                    setupButtonListener();
+                    setupAgent();
                 }
                 break;
             case R.id.one_to_one_call:
