@@ -348,9 +348,14 @@ public class MainActivity extends AppCompatActivity {
 
                 if (renderRemoteVideo) {
                     for (RemoteVideoStream stream : remoteParticipant.getVideoStreams()) {
-                        StreamData data = new StreamData(stream, null, null);
-                        streamData.put(stream.getId(), data);
-                        startRenderingVideo(data);
+                        if (!streamData.containsKey(stream.getId())) {
+                            Log.i("MainActivity", "HandleAddedParticipants => Started Rendering of Remote Video for video Id: " + stream.getId());
+                            StreamData data = new StreamData(stream, null, null);
+                            streamData.put(stream.getId(), data);
+                            startRenderingVideo(data);
+                        } else {
+                            Log.w("MainActivity", "HandleAddedParticipants => Rendering of Remote Video already started for video Id: " + stream.getId());
+                        }
                     }
                 }
                 remoteParticipant.addOnVideoStreamsUpdatedListener(videoStreamsEventArgs -> videoStreamsUpdated(videoStreamsEventArgs));
@@ -381,10 +386,15 @@ public class MainActivity extends AppCompatActivity {
 
     private void videoStreamsUpdated(RemoteVideoStreamsEvent videoStreamsEventArgs) {
         for(RemoteVideoStream stream : videoStreamsEventArgs.getAddedRemoteVideoStreams()) {
-            StreamData data = new StreamData(stream, null, null);
-            streamData.put(stream.getId(), data);
-            if (renderRemoteVideo) {
-                startRenderingVideo(data);
+            if (!streamData.containsKey(stream.getId())) {
+                Log.i("MainActivity", "VideoStreamsUpdated => Started Rendering of Remote Video for video Id: " + stream.getId());
+                StreamData data = new StreamData(stream, null, null);
+                streamData.put(stream.getId(), data);
+                if (renderRemoteVideo) {
+                    startRenderingVideo(data);
+                }
+            } else {
+                Log.w("MainActivity", "VideoStreamsUpdated => Rendering of Remote Video already started for video Id: " + stream.getId());
             }
         }
 
