@@ -114,6 +114,22 @@
                 android:gravity="center"
                 android:text="Switch Source"
                 android:visibility="invisible" />
+
+            <Button
+                android:id="@+id/enable_bgblur"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Enable BG Blur"
+                android:visibility="invisible" />
+
+            <Button
+                android:id="@+id/disable_bgblur"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Disable BG Blur"
+                android:visibility="invisible" />
         </LinearLayout>
 
     </FrameLayout>

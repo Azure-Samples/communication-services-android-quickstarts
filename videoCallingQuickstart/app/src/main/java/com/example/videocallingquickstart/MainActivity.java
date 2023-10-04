@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.os.Bundle;
@@ -17,15 +18,22 @@ import android.widget.RadioButton;
 import android.widget.Toast;
 import android.widget.LinearLayout;
 import android.content.Context;
+
+import com.azure.android.communication.calling.BackgroundBlurEffect;
 import com.azure.android.communication.calling.CallState;
 import com.azure.android.communication.calling.CallingCommunicationException;
+import com.azure.android.communication.calling.Features;
 import com.azure.android.communication.calling.GroupCallLocator;
 import com.azure.android.communication.calling.JoinCallOptions;
+import com.azure.android.communication.calling.LocalVideoEffectsFeature;
 import com.azure.android.communication.calling.ParticipantsUpdatedListener;
 import com.azure.android.communication.calling.PropertyChangedEvent;
 import com.azure.android.communication.calling.PropertyChangedListener;
 import com.azure.android.communication.calling.StartCallOptions;
 import com.azure.android.communication.calling.VideoDeviceInfo;
+import com.azure.android.communication.calling.VideoEffectDisabledEvent;
+import com.azure.android.communication.calling.VideoEffectEnabledEvent;
+import com.azure.android.communication.calling.VideoEffectErrorEvent;
 import com.azure.android.communication.common.CommunicationIdentifier;
 import com.azure.android.communication.common.CommunicationTokenCredential;
 import com.azure.android.communication.calling.CallAgent;
@@ -59,7 +67,9 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
+
+    private String TAG = "MainActivity";
 
     private CallAgent callAgent;
     private VideoDeviceInfo currentCamera;
@@ -77,12 +87,21 @@ public class MainActivity extends AppCompatActivity {
     final HashSet<String> joinedParticipants = new HashSet<>();
 
     Button switchSourceButton;
+    Button enableBGButton;
+    Button disableBGButton;
     RadioButton oneToOneCall, groupCall;
+
+    LocalVideoEffectsFeature videoEffectsFeature;
+    BackgroundBlurEffect backgroundBlurVideoEffect;
+
+    String userToken;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        userToken = getIntent().getStringExtra("TOKEN");
 
         getAllPermissions();
         createAgent();
@@ -101,6 +120,12 @@ public class MainActivity extends AppCompatActivity {
         switchSourceButton = findViewById(R.id.switch_source);
         switchSourceButton.setOnClickListener(l -> switchSource());
 
+        enableBGButton = findViewById(R.id.enable_bgblur);
+        enableBGButton.setOnClickListener(l -> enableBGButton());
+
+        disableBGButton = findViewById(R.id.disable_bgblur);
+        disableBGButton.setOnClickListener(l -> disableBGButton());
+
         setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
 
         oneToOneCall = findViewById(R.id.one_to_one_call);
@@ -108,6 +133,8 @@ public class MainActivity extends AppCompatActivity {
         oneToOneCall.setChecked(true);
         groupCall = findViewById(R.id.group_call);
         groupCall.setOnClickListener(this::onCallTypeSelected);
+
+        backgroundBlurVideoEffect = new BackgroundBlurEffect();
 
     }
 
@@ -126,7 +153,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void createAgent() {
         Context context = this.getApplicationContext();
-        String userToken = "<USER_ACCESS_TOKEN>";
         try {
             CommunicationTokenCredential credential = new CommunicationTokenCredential(userToken);
             CallClient callClient = new CallClient();
@@ -202,6 +228,8 @@ public class MainActivity extends AppCompatActivity {
         try {
             call.hangUp().get();
             switchSourceButton.setVisibility(View.INVISIBLE);
+            enableBGButton.setVisibility(View.VISIBLE);
+            disableBGButton.setVisibility(View.VISIBLE);
         } catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }
@@ -218,6 +246,15 @@ public class MainActivity extends AppCompatActivity {
                 showPreview(currentVideoStream);
                 call.startVideo(this, currentVideoStream).get();
                 switchSourceButton.setVisibility(View.VISIBLE);
+                enableBGButton.setVisibility(View.VISIBLE);
+                disableBGButton.setVisibility(View.VISIBLE);
+
+                if (currentVideoStream != null && videoEffectsFeature == null) {
+                    videoEffectsFeature = currentVideoStream.feature(Features.LOCAL_VIDEO_EFFECTS);
+                    videoEffectsFeature.addOnVideoEffectEnabledListener(this::onVideoEffectEnabled);
+                    videoEffectsFeature.addOnVideoEffectDisabledListener(this::onVideoEffectDisabled);
+                    videoEffectsFeature.addOnVideoEffectErrorListener(this::onVideoEffectError);
+                }
             } catch (CallingCommunicationException acsException) {
                 acsException.printStackTrace();
             } catch (ExecutionException | InterruptedException e) {
@@ -236,6 +273,8 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             switchSourceButton.setVisibility(View.INVISIBLE);
+            enableBGButton.setVisibility(View.INVISIBLE);
+            disableBGButton.setVisibility(View.INVISIBLE);
             previewRenderer.dispose();
             previewRenderer = null;
             call.stopVideo(this, currentVideoStream).get();
@@ -272,7 +311,16 @@ public class MainActivity extends AppCompatActivity {
         runOnUiThread(() -> {
             layout.addView(preview);
             switchSourceButton.setVisibility(View.VISIBLE);
+            enableBGButton.setVisibility(View.VISIBLE);
+            disableBGButton.setVisibility(View.VISIBLE);
         });
+
+        if (stream != null && videoEffectsFeature == null) {
+            videoEffectsFeature = currentVideoStream.feature(Features.LOCAL_VIDEO_EFFECTS);
+            videoEffectsFeature.addOnVideoEffectEnabledListener(this::onVideoEffectEnabled);
+            videoEffectsFeature.addOnVideoEffectDisabledListener(this::onVideoEffectDisabled);
+            videoEffectsFeature.addOnVideoEffectErrorListener(this::onVideoEffectError);
+        }
     }
 
     public void switchSource() {
@@ -286,6 +334,39 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
+    }
+
+    public void enableBGButton() {
+
+        if (videoEffectsFeature.isEffectSupported(backgroundBlurVideoEffect))
+        {
+            android.util.Log.d(TAG, "BG BLUR IS SUPPORTED");
+            videoEffectsFeature.enableEffect(backgroundBlurVideoEffect);
+        }
+        else
+        {
+            android.util.Log.d(TAG, "BG BLUR NOT SUPPORTED");
+            Toast.makeText(this, "BG BLUR NOT SUPPORTED", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void disableBGButton() {
+        videoEffectsFeature.disableEffect(backgroundBlurVideoEffect);
+    }
+
+    private void onVideoEffectEnabled(VideoEffectEnabledEvent args)
+    {
+        Log.i(TAG, "Effect enabled for effect " + args.getVideoEffectName());
+    }
+
+    private void onVideoEffectDisabled(VideoEffectDisabledEvent args)
+    {
+        Log.i(TAG, "Effect disabled for effect " + args.getVideoEffectName());
+    }
+
+    private void onVideoEffectError(VideoEffectErrorEvent args)
+    {
+        Log.i(TAG, "Error " + args.getCode() + ":" + args.getMessage() + " for effect " + args.getVideoEffectName());
     }
 
     private void handleCallOnStateChanged(PropertyChangedEvent args) {
@@ -403,13 +484,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onFirstFrameRendered() {
                 String text = data.renderer.getSize().toString();
-                Log.i("MainActivity", "Video rendering at: " + text);
+                Log.i(TAG, "Video rendering at: " + text);
             }
 
             @Override
             public void onRendererFailedToStart() {
                 String text = "Video failed to render";
-                Log.i("MainActivity", text);
+                Log.i(TAG, text);
             }
         });
         data.rendererView = data.renderer.createView(new CreateViewOptions(ScalingMode.FIT));

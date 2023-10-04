@@ -15,17 +15,27 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <!--Our Calling SDK depends on the Apache HTTP SDK.
-When targeting Android SDK 28+, this library needs to be explicitly referenced.
-See https://developer.android.com/about/versions/pie/android-9.0-changes-28#apache-p-->
-        <uses-library android:name="org.apache.http.legacy" android:required="false"/>
-        <activity android:name=".MainActivity">
+        <activity
+            android:name=".TokenActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/AppTheme" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!--
+Our Calling SDK depends on the Apache HTTP SDK.
+When targeting Android SDK 28+, this library needs to be explicitly referenced.
+See https://developer.android.com/about/versions/pie/android-9.0-changes-28#apache-p
+        -->
+        <uses-library
+            android:name="org.apache.http.legacy"
+            android:required="false" />
+
+        <activity android:name=".MainActivity"/>
     </application>
 
 </manifest>
