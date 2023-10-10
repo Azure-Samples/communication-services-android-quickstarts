@@ -7,8 +7,10 @@ import androidx.core.app.ActivityCompat;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,26 +22,43 @@ import com.azure.android.communication.calling.CallAgent;
 import com.azure.android.communication.calling.CallClient;
 import com.azure.android.communication.calling.HangUpOptions;
 import com.azure.android.communication.calling.JoinCallOptions;
+import com.azure.android.communication.calling.TeamsCall;
+import com.azure.android.communication.calling.TeamsCallAgent;
+import com.azure.android.communication.calling.TeamsCallAgentOptions;
 import com.azure.android.communication.common.CommunicationTokenCredential;
 import com.azure.android.communication.calling.TeamsMeetingLinkLocator;
 
 public class MainActivity extends AppCompatActivity {
     private static final String[] allPermissions = new String[] { Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_PHONE_STATE };
     private static final String UserToken = "<User_Access_Token>";
+    private static final String TeamsUserToken = "<Teams_User_Access_Token>";
 
     TextView callStatusBar;
     TextView recordingStatusBar;
 
     private CallAgent agent;
+    private TeamsCallAgent teamsAgent;
     private Call call;
+    private TeamsCall teamsCall;
+
+    RadioButton acsCall;
+    RadioButton cteCall;
+
+    private boolean isCTE = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        acsCall = findViewById(R.id.acs_call);
+        acsCall.setOnClickListener(this::callMethodChanged);
+        acsCall.setChecked(true);
+        cteCall = findViewById(R.id.cte_call);
+        cteCall.setOnClickListener(this::callMethodChanged);
+
         getAllPermissions();
-        createAgent();
+        setupAgent();
 
         Button joinMeetingButton = findViewById(R.id.join_meeting_button);
         joinMeetingButton.setOnClickListener(l -> joinTeamsMeeting());
@@ -55,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
      * Join Teams meeting
      */
     private void joinTeamsMeeting() {
-        if (UserToken.startsWith("<")) {
+        if (UserToken.startsWith("<") || TeamsUserToken.startsWith("<")) {
             Toast.makeText(this, "Please enter token in source code", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -69,12 +88,20 @@ public class MainActivity extends AppCompatActivity {
 
         JoinCallOptions options = new JoinCallOptions();
         TeamsMeetingLinkLocator teamsMeetingLinkLocator = new TeamsMeetingLinkLocator(meetingLink);
-        call = agent.join(
-                getApplicationContext(),
-                teamsMeetingLinkLocator,
-                options);
-        call.addOnStateChangedListener(p -> setCallStatus(call.getState().toString()));
-        call.addOnIsRecordingActiveChangedListener(p -> setRecordingStatus(call.isRecordingActive()));
+
+        if (isCTE){
+            teamsCall = teamsAgent.join(
+                    getApplicationContext(),
+                    teamsMeetingLinkLocator,
+                    options);
+            teamsCall.addOnStateChangedListener((p -> setCallStatus(teamsCall.getState().toString())));
+        }else {
+            call = agent.join(
+                    getApplicationContext(),
+                    teamsMeetingLinkLocator,
+                    options);
+            call.addOnStateChangedListener(p -> setCallStatus(call.getState().toString()));
+        }
     }
 
     /**
@@ -82,7 +109,11 @@ public class MainActivity extends AppCompatActivity {
      */
     private void leaveMeeting() {
         try {
-            call.hangUp(new HangUpOptions()).get();
+            if (isCTE){
+                teamsCall.hangUp(new HangUpOptions()).get();
+            }else {
+                call.hangUp(new HangUpOptions()).get();
+            }
         } catch (ExecutionException | InterruptedException e) {
             Toast.makeText(this, "Unable to leave meeting", Toast.LENGTH_SHORT).show();
         }
@@ -97,6 +128,35 @@ public class MainActivity extends AppCompatActivity {
             agent = new CallClient().createCallAgent(getApplicationContext(), credential).get();
         } catch (Exception ex) {
             Toast.makeText(getApplicationContext(), "Failed to create call agent.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * Create the teams call agent
+     */
+    private void createTeamsAgent() {
+        try {
+            CommunicationTokenCredential credential = new CommunicationTokenCredential(TeamsUserToken);
+            TeamsCallAgentOptions options = new TeamsCallAgentOptions();
+            teamsAgent = new CallClient().createTeamsCallAgent(getApplicationContext(), credential, options).get();
+        } catch (Exception ex) {
+            Toast.makeText(getApplicationContext(), "Failed to create teams call agent.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void setupAgent(){
+        if(isCTE){
+            if (agent != null) {
+                agent.dispose();
+                agent = null;
+            }
+            createTeamsAgent();
+        }else{
+            if (teamsAgent != null) {
+                teamsAgent.dispose();
+                teamsAgent = null;
+            }
+            createAgent();
         }
     }
 
@@ -147,5 +207,21 @@ public class MainActivity extends AppCompatActivity {
         else {
             runOnUiThread(() -> recordingStatusBar.setText(""));
         }
+    }
+
+    private void callMethodChanged(View view){
+        switch (view.getId()){
+            case R.id.acs_call:
+                if (((RadioButton) view).isChecked()){
+                    isCTE = false;
+                }
+                break;
+            case R.id.cte_call:
+                if (((RadioButton) view).isChecked()){
+                    isCTE = true;
+                }
+                break;
+        }
+        setupAgent();
     }
 }
