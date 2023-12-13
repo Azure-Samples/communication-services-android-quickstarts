@@ -17,6 +17,11 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        manifestPlaceholders = [launchApp:".MainActivity"]
+        if (project.hasProperty("isCTE") && project.getProperties().get("isCTE") =="true") {
+            manifestPlaceholders = [launchApp:".MainCTEActivity"]
+        }
     }
 
     buildTypes {
@@ -38,7 +43,9 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
-    implementation 'com.azure.android:azure-communication-calling:1.2.0-beta.2'
+//    implementation 'com.azure.android:azure-communication-calling:1.2.0-beta.2'
+    implementation 'com.azure.android:azure-communication-common:1.1.0'
+    implementation files('C:\\Skype-Android\\SpoolCallingStack\\native\\sdk\\android\\AndroidACSCallingSDK\\ACSCallingSDK\\build\\outputs\\aar\\azure-communication-calling-1.0.0-beta.1.aar')
 }
 
 allprojects {
