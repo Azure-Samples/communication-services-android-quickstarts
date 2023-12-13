@@ -19,10 +19,7 @@ import android.widget.LinearLayout;
 import android.content.Context;
 import com.azure.android.communication.calling.CallState;
 import com.azure.android.communication.calling.CallingCommunicationException;
-import com.azure.android.communication.calling.GroupCallLocator;
-import com.azure.android.communication.calling.IncomingAudioOptions;
 import com.azure.android.communication.calling.IncomingVideoOptions;
-import com.azure.android.communication.calling.JoinCallOptions;
 import com.azure.android.communication.calling.OutgoingAudioOptions;
 import com.azure.android.communication.calling.OutgoingVideoOptions;
 import com.azure.android.communication.calling.ParticipantsUpdatedListener;
@@ -31,9 +28,10 @@ import com.azure.android.communication.calling.PropertyChangedListener;
 import com.azure.android.communication.calling.StartCallOptions;
 import com.azure.android.communication.calling.VideoDeviceInfo;
 import com.azure.android.communication.calling.VideoStreamType;
+import com.azure.android.communication.common.CommunicationCloudEnvironment;
 import com.azure.android.communication.common.CommunicationIdentifier;
 import com.azure.android.communication.common.CommunicationTokenCredential;
-import com.azure.android.communication.calling.CallAgent;
+import com.azure.android.communication.calling.TeamsCallAgent;
 import com.azure.android.communication.calling.CallClient;
 import com.azure.android.communication.calling.DeviceManager;
 import com.azure.android.communication.calling.VideoOptions;
@@ -42,8 +40,8 @@ import com.azure.android.communication.calling.VideoStreamRenderer;
 import com.azure.android.communication.calling.VideoStreamRendererView;
 import com.azure.android.communication.calling.CreateViewOptions;
 import com.azure.android.communication.calling.ScalingMode;
-import com.azure.android.communication.calling.IncomingCall;
-import com.azure.android.communication.calling.Call;
+import com.azure.android.communication.calling.TeamsIncomingCall;
+import com.azure.android.communication.calling.TeamsCall;
 import com.azure.android.communication.calling.AcceptCallOptions;
 import com.azure.android.communication.calling.ParticipantsUpdatedEvent;
 import com.azure.android.communication.calling.RemoteParticipant;
@@ -65,17 +63,17 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
-public class MainActivity extends AppCompatActivity {
+public class MainCTEActivity extends AppCompatActivity {
 
-    private CallAgent callAgent;
+    private TeamsCallAgent teamsCallAgent;
     private VideoDeviceInfo currentCamera;
     private LocalVideoStream currentVideoStream;
     private DeviceManager deviceManager;
-    private IncomingCall incomingCall;
-    private Call call;
+    private TeamsIncomingCall teamsIncomingCall;
+    private TeamsCall teamsCall;
     VideoStreamRenderer previewRenderer;
     VideoStreamRendererView preview;
-    final Map<Integer, StreamData> streamData = new HashMap<>();
+    final Map<Integer, MainActivity.StreamData> streamData = new HashMap<>();
     private boolean renderRemoteVideo = true;
     private ParticipantsUpdatedListener remoteParticipantUpdatedListener;
     private PropertyChangedListener onStateChangedListener;
@@ -91,12 +89,12 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         getAllPermissions();
-        createAgent();
-        handleIncomingCall();
+        createTeamsAgent();
+        handleTeamsIncomingCall();
         setDeviceManager();
 
         Button callButton = findViewById(R.id.call_button);
-        callButton.setOnClickListener(l -> startCall());
+        callButton.setOnClickListener(l -> startTeamsCall());
 
         switchSourceButton = findViewById(R.id.switch_source);
         switchSourceButton.setOnClickListener(l -> switchSource());
@@ -141,32 +139,42 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void createAgent() {
+    private void createTeamsAgent() {
         Context context = this.getApplicationContext();
         String userToken = "<User_Access_Token>";
         try {
             CommunicationTokenCredential credential = new CommunicationTokenCredential(userToken);
             CallClient callClient = new CallClient();
-            callAgent = callClient.createCallAgent(getApplicationContext(), credential).get();
+            teamsCallAgent = callClient.createTeamsCallAgent(getApplicationContext(), credential).get();
         } catch (Exception ex) {
-            Toast.makeText(context, "Failed to create call agent.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "Failed to create teams call agent.", Toast.LENGTH_SHORT).show();
         }
     }
 
-    private void handleIncomingCall() {
-        callAgent.addOnIncomingCallListener((incomingCall) -> {
-            this.incomingCall = incomingCall;
-            Executors.newCachedThreadPool().submit(this::answerIncomingCall);
+    private void handleTeamsIncomingCall() {
+        teamsCallAgent.addOnIncomingCallListener((incomingCall) -> {
+            this.teamsIncomingCall = incomingCall;
+            Executors.newCachedThreadPool().submit(this::answerTeamsIncomingCall);
         });
     }
 
-    private void startCall() {
+    private void startTeamsCall() {
         Context context = this.getApplicationContext();
         EditText callIdView = findViewById(R.id.call_id);
         String callId = callIdView.getText().toString();
-        ArrayList<CommunicationIdentifier> participants = new ArrayList<CommunicationIdentifier>();
-        List<VideoDeviceInfo> cameras = deviceManager.getCameras();
 
+        MicrosoftTeamsUserIdentifier participant;
+        if (callId.startsWith("8:orgid:")){
+            participant = new MicrosoftTeamsUserIdentifier(callId.substring("8:orgid:".length())).setCloudEnvironment(CommunicationCloudEnvironment.PUBLIC);
+        } else if (callId.startsWith("8:dod:")) {
+            participant = new MicrosoftTeamsUserIdentifier(callId.substring("8:dod:".length())).setCloudEnvironment(CommunicationCloudEnvironment.DOD);
+        } else if (callId.startsWith("8:gcch:")) {
+            participant = new MicrosoftTeamsUserIdentifier(callId.substring("8:gcch:".length())).setCloudEnvironment(CommunicationCloudEnvironment.GCCH);
+        } else {
+            participant = new MicrosoftTeamsUserIdentifier(callId).setCloudEnvironment(CommunicationCloudEnvironment.PUBLIC);
+        }
+
+        List<VideoDeviceInfo> cameras = deviceManager.getCameras();
 
         if(oneToOneCall.isChecked()){
             StartCallOptions options = new StartCallOptions();
@@ -175,7 +183,7 @@ public class MainActivity extends AppCompatActivity {
             OutgoingAudioOptions outgoingAudioOptions = new OutgoingAudioOptions();
             if(!cameras.isEmpty()) {
                 currentCamera = getNextAvailableCamera(null);
-                currentVideoStream = new LocalVideoStream(currentCamera, context);
+                currentVideoStream = new LocalVideoStream(currentCamera, this);
                 LocalVideoStream[] videoStreams = new LocalVideoStream[1];
                 videoStreams[0] = currentVideoStream;
                 incomingVideoOptions.setStreamType(VideoStreamType.REMOTE_INCOMING);
@@ -183,51 +191,35 @@ public class MainActivity extends AppCompatActivity {
                 outgoingAudioOptions.setMuted(false);
                 showPreview(currentVideoStream);
             }
-            participants.add(new CommunicationUserIdentifier(callId));
 
             options.setIncomingVideoOptions(incomingVideoOptions);
             options.setOutgoingVideoOptions(outgoingVideoOptions);
             options.setOutgoingAudioOptions(outgoingAudioOptions);
 
-            call = callAgent.startCall(
+            teamsCall = teamsCallAgent.startCall(
                     context,
-                    participants,
+                    participant,
                     options);
         }
         else{
-
-            JoinCallOptions options = new JoinCallOptions();
-            if(!cameras.isEmpty()) {
-                currentCamera = getNextAvailableCamera(null);
-                currentVideoStream = new LocalVideoStream(currentCamera, context);
-                LocalVideoStream[] videoStreams = new LocalVideoStream[1];
-                videoStreams[0] = currentVideoStream;
-                VideoOptions videoOptions = new VideoOptions(videoStreams);
-                options.setVideoOptions(videoOptions);
-                showPreview(currentVideoStream);
-            }
-            GroupCallLocator groupCallLocator = new GroupCallLocator(UUID.fromString(callId));
-
-            call = callAgent.join(
-                    context,
-                    groupCallLocator,
-                    options);
+            Toast.makeText(context, "Teams user cannot join a group call", Toast.LENGTH_SHORT).show();
         }
+
         remoteParticipantUpdatedListener = this::handleRemoteParticipantsUpdate;
-        onStateChangedListener = this::handleCallOnStateChanged;
-        call.addOnRemoteParticipantsUpdatedListener(remoteParticipantUpdatedListener);
-        call.addOnStateChangedListener(onStateChangedListener);
+        onStateChangedListener = this::handleTeamsCallOnStateChanged;
+        teamsCall.addOnRemoteParticipantsUpdatedListener(remoteParticipantUpdatedListener);
+        teamsCall.addOnStateChangedListener(onStateChangedListener);
     }
 
     private void hangUp() {
         renderRemoteVideo = false;
         try {
-//            for(RemoteParticipant participant : call.getRemoteParticipants()){
+//            for(RemoteParticipant participant : teamsCall.getRemoteParticipants()){
 //                for (RemoteVideoStream stream : participant.getVideoStreams()){
 //                    stopRenderingVideo(stream);
 //                }
 //            }
-            call.hangUp().get();
+            teamsCall.hangUp().get();
             switchSourceButton.setVisibility(View.INVISIBLE);
         } catch (ExecutionException | InterruptedException e) {
             e.printStackTrace();
@@ -243,7 +235,7 @@ public class MainActivity extends AppCompatActivity {
             try {
                 currentVideoStream = new LocalVideoStream(currentCamera, this);
                 showPreview(currentVideoStream);
-                call.startVideo(this, currentVideoStream).get();
+                teamsCall.startVideo(this, currentVideoStream).get();
                 switchSourceButton.setVisibility(View.VISIBLE);
             } catch (CallingCommunicationException acsException) {
                 acsException.printStackTrace();
@@ -265,7 +257,7 @@ public class MainActivity extends AppCompatActivity {
             switchSourceButton.setVisibility(View.INVISIBLE);
             previewRenderer.dispose();
             previewRenderer = null;
-            call.stopVideo(this, currentVideoStream).get();
+            teamsCall.stopVideo(this, currentVideoStream).get();
         } catch (CallingCommunicationException acsException) {
             acsException.printStackTrace();
         } catch (ExecutionException | InterruptedException e) {
@@ -315,12 +307,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void handleCallOnStateChanged(PropertyChangedEvent args) {
-        if (call.getState() == CallState.CONNECTED) {
+    private void handleTeamsCallOnStateChanged(PropertyChangedEvent args) {
+        if (teamsCall.getState() == CallState.CONNECTED) {
             runOnUiThread(() -> Toast.makeText(this, "Call is CONNECTED", Toast.LENGTH_SHORT).show());
-            handleCallState();
+            handleTeamsCallState();
         }
-        if (call.getState() == CallState.DISCONNECTED) {
+        if (teamsCall.getState() == CallState.DISCONNECTED) {
             runOnUiThread(() -> Toast.makeText(this, "Call is DISCONNECTED", Toast.LENGTH_SHORT).show());
             if (previewRenderer != null) {
                 previewRenderer.dispose();
@@ -329,13 +321,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void handleCallState() {
-        handleAddedParticipants(call.getRemoteParticipants());
+    private void handleTeamsCallState() {
+        handleAddedParticipants(teamsCall.getRemoteParticipants());
     }
 
-    private void answerIncomingCall() {
+    private void answerTeamsIncomingCall() {
         Context context = this.getApplicationContext();
-        if (incomingCall == null) {
+        if (teamsIncomingCall == null) {
             return;
         }
         AcceptCallOptions acceptCallOptions = new AcceptCallOptions();
@@ -350,7 +342,7 @@ public class MainActivity extends AppCompatActivity {
             showPreview(currentVideoStream);
         }
         try {
-            call = incomingCall.accept(context, acceptCallOptions).get();
+            teamsCall = teamsIncomingCall.accept(context, acceptCallOptions).get();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
@@ -358,9 +350,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
         remoteParticipantUpdatedListener = this::handleRemoteParticipantsUpdate;
-        onStateChangedListener = this::handleCallOnStateChanged;
-        call.addOnRemoteParticipantsUpdatedListener(remoteParticipantUpdatedListener);
-        call.addOnStateChangedListener(onStateChangedListener);
+        onStateChangedListener = this::handleTeamsCallOnStateChanged;
+        teamsCall.addOnRemoteParticipantsUpdatedListener(remoteParticipantUpdatedListener);
+        teamsCall.addOnStateChangedListener(onStateChangedListener);
     }
 
     public void handleRemoteParticipantsUpdate(ParticipantsUpdatedEvent args) {
@@ -375,7 +367,7 @@ public class MainActivity extends AppCompatActivity {
 
                 if (renderRemoteVideo) {
                     for (RemoteVideoStream stream : remoteParticipant.getVideoStreams()) {
-                        StreamData data = new StreamData(stream, null, null);
+                        MainActivity.StreamData data = new MainActivity.StreamData(stream, null, null);
                         streamData.put(stream.getId(), data);
                         startRenderingVideo(data);
                     }
@@ -408,7 +400,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void videoStreamsUpdated(RemoteVideoStreamsEvent videoStreamsEventArgs) {
         for(RemoteVideoStream stream : videoStreamsEventArgs.getAddedRemoteVideoStreams()) {
-            StreamData data = new StreamData(stream, null, null);
+            MainActivity.StreamData data = new MainActivity.StreamData(stream, null, null);
             streamData.put(stream.getId(), data);
             if (renderRemoteVideo) {
                 startRenderingVideo(data);
@@ -420,7 +412,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    void startRenderingVideo(StreamData data){
+    void startRenderingVideo(MainActivity.StreamData data){
         if (data.renderer != null) {
             return;
         }
@@ -452,7 +444,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void stopRenderingVideo(RemoteVideoStream stream) {
-        StreamData data = streamData.get(stream.getId());
+        MainActivity.StreamData data = streamData.get(stream.getId());
         if (data == null || data.renderer == null) {
             return;
         }
@@ -499,4 +491,5 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }
     }
+
 }
