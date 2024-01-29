@@ -26,6 +26,7 @@ import com.azure.android.communication.calling.ParticipantsUpdatedListener;
 import com.azure.android.communication.calling.PropertyChangedEvent;
 import com.azure.android.communication.calling.PropertyChangedListener;
 import com.azure.android.communication.calling.StartCallOptions;
+import com.azure.android.communication.calling.StartTeamsCallOptions;
 import com.azure.android.communication.calling.VideoDeviceInfo;
 import com.azure.android.communication.calling.VideoStreamType;
 import com.azure.android.communication.common.CommunicationCloudEnvironment;
@@ -177,7 +178,7 @@ public class MainCTEActivity extends AppCompatActivity {
         List<VideoDeviceInfo> cameras = deviceManager.getCameras();
 
         if(oneToOneCall.isChecked()){
-            StartCallOptions options = new StartCallOptions();
+            StartTeamsCallOptions options = new StartTeamsCallOptions();
             IncomingVideoOptions incomingVideoOptions = new IncomingVideoOptions();
             OutgoingVideoOptions outgoingVideoOptions = new OutgoingVideoOptions();
             OutgoingAudioOptions outgoingAudioOptions = new OutgoingAudioOptions();
