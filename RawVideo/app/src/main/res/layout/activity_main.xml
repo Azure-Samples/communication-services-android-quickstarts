@@ -39,6 +39,8 @@
             android:onClick="GetPermissions"
             android:backgroundTint="#0000FF"
             android:textColor="@color/white"
+            android:textAllCaps="false"
+            android:textSize="16sp"
             />
     </LinearLayout>
 
@@ -163,6 +165,8 @@
                 android:layout_marginRight="10dp"
                 android:backgroundTint="#00FF00"
                 android:textColor="@color/black"
+                android:textAllCaps="false"
+                android:textSize="16sp"
                 />
 
             <Button
@@ -173,6 +177,8 @@
                 android:onClick="EndCall"
                 android:backgroundTint="#FF0000"
                 android:textColor="@color/black"
+                android:textAllCaps="false"
+                android:textSize="16sp"
                 />
         </LinearLayout>
     </LinearLayout>

@@ -271,7 +271,7 @@ public class MainActivity extends AppCompatActivity
     {
         if (tokenEditText.getText().toString().isEmpty())
         {
-            ShowMessage("Token is not valid");
+            ShowMessage("Invalid token");
             return;
         }
 
@@ -934,7 +934,7 @@ public class MainActivity extends AppCompatActivity
     private boolean ValidateCallSettings()
     {
         String meetingLink = meetingLinkEditText.getText().toString();
-        if (!meetingLink.startsWith("https://") || meetingLink.equals("Teams meeting link"))
+        if (!meetingLink.startsWith("https://"))
         {
             ShowMessage("Invalid teams meeting link");
             return false;
