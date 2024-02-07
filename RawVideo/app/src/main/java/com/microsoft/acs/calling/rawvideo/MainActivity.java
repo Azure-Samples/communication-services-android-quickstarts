@@ -860,6 +860,7 @@ public class MainActivity extends AppCompatActivity
                     remoteVideoStream = null;
                     rawIncomingVideoStream = null;
 
+                    StopLocalPreview();
                     StopCameraCaptureService();
                     StopScreenShareCaptureService();
 
