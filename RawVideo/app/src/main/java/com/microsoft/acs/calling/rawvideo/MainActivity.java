@@ -572,6 +572,7 @@ public class MainActivity extends AppCompatActivity
                         break;
                 }
 
+                outgoingVideoStream = null;
                 break;
         }
     }
@@ -864,6 +865,12 @@ public class MainActivity extends AppCompatActivity
                     StopCameraCaptureService();
                     StopScreenShareCaptureService();
 
+                    if (localVideoStream != null)
+                    {
+                        localVideoStream.removeOnStateChangedListener(this::OnVideoStreamStateChanged);
+                        localVideoStream = null;
+                    }
+
                     if (virtualOutgoingVideoStream != null)
                     {
                         virtualOutgoingVideoStream.removeOnStateChangedListener(this::OnVideoStreamStateChanged);
@@ -874,12 +881,6 @@ public class MainActivity extends AppCompatActivity
                     {
                         screenShareOutgoingVideoStream.removeOnStateChangedListener(this::OnVideoStreamStateChanged);
                         screenShareOutgoingVideoStream = null;
-                    }
-
-                    if (localVideoStream != null)
-                    {
-                        localVideoStream.removeOnStateChangedListener(this::OnVideoStreamStateChanged);
-                        localVideoStream = null;
                     }
 
                     if (outgoingVideoStream != null)
