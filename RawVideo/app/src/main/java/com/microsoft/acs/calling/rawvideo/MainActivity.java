@@ -3,14 +3,19 @@ package com.microsoft.acs.calling.rawvideo;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.projection.MediaProjectionManager;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.DisplayMetrics;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -20,13 +25,13 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.azure.android.communication.calling.Call;
 import com.azure.android.communication.calling.CallAgent;
 import com.azure.android.communication.calling.CallAgentOptions;
 import com.azure.android.communication.calling.CallClient;
 import com.azure.android.communication.calling.CallVideoStream;
-import com.azure.android.communication.calling.CallingCommunicationException;
 import com.azure.android.communication.calling.CreateViewOptions;
 import com.azure.android.communication.calling.DeviceManager;
 import com.azure.android.communication.calling.HangUpOptions;
@@ -53,6 +58,7 @@ import com.azure.android.communication.calling.VideoStreamPixelFormat;
 import com.azure.android.communication.calling.VideoStreamRenderer;
 import com.azure.android.communication.calling.VideoStreamRendererView;
 import com.azure.android.communication.calling.VideoStreamResolution;
+import com.azure.android.communication.calling.VideoStreamState;
 import com.azure.android.communication.calling.VideoStreamStateChangedEvent;
 import com.azure.android.communication.calling.VideoStreamType;
 import com.azure.android.communication.calling.VirtualOutgoingVideoStream;
@@ -63,27 +69,25 @@ import com.microsoft.acs.calling.rawvideo.ui.VideoStreamTypeListViewAdapter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity
 {
     // UI
-    private LinearLayout settingsContainer;
+    private LinearLayout callSettingsContainer;
     private ConstraintLayout videoContainer;
     private EditText tokenEditText;
-    private EditText meetingUrlEditText;
+    private EditText meetingLinkEditText;
     private Spinner videoDeviceInfoSpinner;
     private Spinner cameraSpinner;
     private LinearLayout outgoingVideoContainer;
     private LinearLayout incomingVideoContainer;
+    private ProgressDialog progressDialog;
     private int selectVideoDeviceInfoIndex = -1;
     private int selectCameraIndex = -1;
 
     // App
-    private Map<Integer, IncomingVideoStream> incomingVideoStreamMap;
     private List<VideoStreamType> outgoingVideoStreamTypeList;
     private List<VideoStreamType> incomingVideoStreamTypeList;
     private List<VideoDeviceInfo> videoDeviceInfoList;
@@ -94,6 +98,9 @@ public class MainActivity extends AppCompatActivity
     private DeviceManager deviceManager;
     private ScreenCaptureService screenCaptureService;
     private CameraCaptureService cameraCaptureService;
+    private IncomingVideoStream incomingVideoStream;
+    private RemoteVideoStream remoteVideoStream;
+    private RawIncomingVideoStream rawIncomingVideoStream;
     private OutgoingVideoStream outgoingVideoStream;
     private LocalVideoStream localVideoStream;
     private VirtualOutgoingVideoStream virtualOutgoingVideoStream;
@@ -107,13 +114,14 @@ public class MainActivity extends AppCompatActivity
     private VideoStreamType outgoingVideoStreamType;
     private VideoStreamType incomingVideoStreamType;
     private Intent screenShareServiceIntent;
+    private SharedPreferences.Editor editor;
+    private SharedPreferences sharedPreferences;
     private int w = 0;
     private int h = 0;
     private int frameRate = 30;
     private double maxWidth = 1920.0;
     private double maxHeight = 1080.0;
     private boolean callInProgress = false;
-    private boolean loading = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -121,38 +129,44 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        FindUIVariables();
-        InitializeTestCase();
-        GetPermissions();
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setCancelable(false);
+
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        editor = sharedPreferences.edit();
+
+        String savedToken = sharedPreferences.getString("Token", null);
+        tokenEditText = findViewById(R.id.token_edit_text);
+
+        if (savedToken != null)
+        {
+            tokenEditText.setText(savedToken);
+        }
 
         setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
     }
 
-    private void FindUIVariables()
-    {
-        outgoingVideoContainer = findViewById(R.id.outgoingVideoContainer);
-        incomingVideoContainer = findViewById(R.id.incomingVideoContainer);
-
-        tokenEditText = findViewById(R.id.TokenEditText);
-        meetingUrlEditText = findViewById(R.id.MeetingUrlEditText);
-    }
-
     @SuppressLint("SetTextI18n")
-    private void InitializeTestCase()
+    private void InitResources()
     {
-        incomingVideoStreamMap = new HashMap<>();
-
-        settingsContainer = findViewById(R.id.settings_container);
         videoContainer = findViewById(R.id.videoContainer);
+        outgoingVideoContainer = findViewById(R.id.outgoing_video_container);
+        incomingVideoContainer = findViewById(R.id.incoming_video_container);
+        callSettingsContainer = findViewById(R.id.call_settings_container);
 
         CreateCallAgent();
+
+        if (deviceManager == null)
+        {
+            return;
+        }
 
         incomingVideoStreamTypeList = Arrays.asList(VideoStreamType.REMOTE_INCOMING,
                 VideoStreamType.RAW_INCOMING);
         VideoStreamTypeListViewAdapter incomingVideoDeviceInfoListViewAdapter =
                 new VideoStreamTypeListViewAdapter(this, incomingVideoStreamTypeList);
 
-        Spinner incomingVideoStreamTypeSpinner = findViewById(R.id.incomingVideoStreamTypeSpinner);
+        Spinner incomingVideoStreamTypeSpinner = findViewById(R.id.incoming_video_stream_type_spinner);
         incomingVideoStreamTypeSpinner.setAdapter(incomingVideoDeviceInfoListViewAdapter);
         incomingVideoStreamTypeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener()
         {
@@ -173,7 +187,7 @@ public class MainActivity extends AppCompatActivity
         VideoStreamTypeListViewAdapter outgoingVideoDeviceInfoListViewAdapter =
                 new VideoStreamTypeListViewAdapter(this, outgoingVideoStreamTypeList);
 
-        Spinner outgoingVideoStreamTypeSpinner = findViewById(R.id.outgoingVideoStreamTypeSpinner);
+        Spinner outgoingVideoStreamTypeSpinner = findViewById(R.id.outgoing_video_stream_type_spinner);
         outgoingVideoStreamTypeSpinner.setAdapter(outgoingVideoDeviceInfoListViewAdapter);
         outgoingVideoStreamTypeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener()
         {
@@ -207,7 +221,7 @@ public class MainActivity extends AppCompatActivity
         VideoDeviceListViewAdapter videoDeviceInfoListViewAdapter =
                 new VideoDeviceListViewAdapter(this, videoDeviceInfoList);
 
-        videoDeviceInfoSpinner = findViewById(R.id.videoDeviceInfoSpinner);
+        videoDeviceInfoSpinner = findViewById(R.id.video_device_info_spinner);
         videoDeviceInfoSpinner.setAdapter(videoDeviceInfoListViewAdapter);
         videoDeviceInfoSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener()
         {
@@ -224,7 +238,7 @@ public class MainActivity extends AppCompatActivity
         cameraList = CameraCaptureService.GetCameraList(this);
         CameraListViewAdapter cameraListViewAdapter = new CameraListViewAdapter(this, cameraList);
 
-        cameraSpinner = findViewById(R.id.cameraSpinner);;
+        cameraSpinner = findViewById(R.id.camera_spinner);;
         cameraSpinner.setAdapter(cameraListViewAdapter);
         cameraSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener()
         {
@@ -237,16 +251,34 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onNothingSelected(AdapterView<?> adapterView) { }
         });
+
+        LinearLayout tokenContainer = findViewById(R.id.token_container);
+        tokenContainer.setVisibility(View.GONE);
+
+        LinearLayout callContainer = findViewById(R.id.call_container);
+        callContainer.setVisibility(View.VISIBLE);
+
+        String savedMeetingLink = sharedPreferences.getString("MeetingLink", null);
+        meetingLinkEditText = findViewById(R.id.meeting_link_edit_text);
+
+        if (savedMeetingLink != null)
+        {
+            meetingLinkEditText.setText(savedMeetingLink);
+        }
     }
 
-    private void GetPermissions()
+    public void GetPermissions(View view)
     {
+        if (tokenEditText.getText().toString().isEmpty())
+        {
+            ShowMessage("Token is not valid");
+            return;
+        }
+
         String[] requiredPermissions = new String[]
         {
-                Manifest.permission.CAMERA,
-                Manifest.permission.RECORD_AUDIO,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                Manifest.permission.READ_PHONE_STATE
+            Manifest.permission.CAMERA,
+            Manifest.permission.RECORD_AUDIO
         };
 
         ArrayList<String> permissionsToAskFor = new ArrayList<>();
@@ -261,6 +293,10 @@ public class MainActivity extends AppCompatActivity
         if (!permissionsToAskFor.isEmpty())
         {
             ActivityCompat.requestPermissions(this, permissionsToAskFor.toArray(new String[0]), 1);
+        }
+        else
+        {
+            InitResources();
         }
     }
 
@@ -277,9 +313,9 @@ public class MainActivity extends AppCompatActivity
             }
             catch (Exception ex)
             {
-                EndCall(null);
+                ShowMessage("Screen capture service failed to start");
 
-                ShowMessage("Screen share failed to start");
+                EndCall(null);
             }
         }
         else
@@ -302,30 +338,17 @@ public class MainActivity extends AppCompatActivity
             }
             else
             {
-                Toast.makeText(getApplicationContext(),
-                                "User cancelled, did not give permission to capture screen",
-                                Toast.LENGTH_SHORT)
-                        .show();
+                ShowMessage("Permission denied for capture the screen");
             }
         }
     }
 
     private void CreateCallAgent()
     {
-        String token = tokenEditText.getText().toString();
-        if (token.isEmpty())
-        {
-            Toast.makeText(getApplicationContext(),
-                            "Token is not valid",
-                            Toast.LENGTH_SHORT)
-                    .show();
-
-            return;
-        }
-
         try
         {
-            CommunicationTokenCredential credential = new CommunicationTokenCredential(token);
+            CommunicationTokenCredential credential =
+                    new CommunicationTokenCredential(tokenEditText.getText().toString());
             callClient = new CallClient();
 
             CallAgentOptions callAgentOptions = new CallAgentOptions();
@@ -334,13 +357,14 @@ public class MainActivity extends AppCompatActivity
             callAgent = callClient.createCallAgent(getApplicationContext(), credential, callAgentOptions).get();
 
             deviceManager = callClient.getDeviceManager(this).get();
+
+            editor.putString("Token", tokenEditText.getText().toString());
+            editor.apply();
         }
         catch (Exception ex)
         {
-            Toast.makeText(getApplicationContext(),
-                    "Failed to create call agent",
-                    Toast.LENGTH_SHORT)
-                    .show();
+            ShowMessage("Failed to create call agent");
+            ex.printStackTrace();
         }
     }
 
@@ -358,39 +382,54 @@ public class MainActivity extends AppCompatActivity
 
         callInProgress = true;
 
-        IncomingVideoOptions incomingVideoOptions = new IncomingVideoOptions()
-                .setStreamType(incomingVideoStreamType);
-
-        OutgoingVideoOptions outgoingVideoOptions = CreateOutgoingVideoOptions();
-
-        JoinCallOptions joinCallOptions = new JoinCallOptions()
-                .setIncomingVideoOptions(incomingVideoOptions)
-                .setOutgoingVideoOptions(outgoingVideoOptions);
-
-        String meetingLink = meetingUrlEditText.getText().toString();
-        JoinMeetingLocator locator = new TeamsMeetingLinkLocator(meetingLink);
-
-        try
+        runOnUiThread(() -> progressDialog.show());
+        Executors.newCachedThreadPool().submit(() ->
         {
-            call = callAgent.join(getApplicationContext(), locator, joinCallOptions);
+            IncomingVideoOptions incomingVideoOptions = new IncomingVideoOptions()
+                    .setStreamType(incomingVideoStreamType);
 
-            callInProgress = true;
-            settingsContainer.setVisibility(View.GONE);
-            videoContainer.setVisibility(View.VISIBLE);
-        }
-        catch (CallingCommunicationException ex)
-        {
-            callInProgress = false;
+            OutgoingVideoOptions outgoingVideoOptions = CreateOutgoingVideoOptions();
 
-            ShowMessage("Call failed to start");
-        }
+            JoinCallOptions joinCallOptions = new JoinCallOptions()
+                    .setIncomingVideoOptions(incomingVideoOptions)
+                    .setOutgoingVideoOptions(outgoingVideoOptions);
 
-        if (call != null)
-        {
-            call.addOnRemoteParticipantsUpdatedListener(this::OnRemoteParticipantsUpdated);
+            JoinMeetingLocator locator =
+                    new TeamsMeetingLinkLocator(meetingLinkEditText.getText().toString());
 
-            AddRemoteParticipantList(call.getRemoteParticipants());
-        }
+            try
+            {
+                call = callAgent.join(getApplicationContext(), locator, joinCallOptions);
+
+                call.muteOutgoingAudio(this).get();
+                call.muteIncomingAudio(this).get();
+
+                runOnUiThread(() ->
+                {
+                    callSettingsContainer.setVisibility(View.GONE);
+                    videoContainer.setVisibility(View.VISIBLE);
+                });
+
+                editor.putString("MeetingLink", meetingLinkEditText.getText().toString());
+                editor.apply();
+            }
+            catch (Exception ex)
+            {
+                callInProgress = false;
+
+                ShowMessage("Call failed to start");
+                ex.printStackTrace();
+            }
+
+            if (call != null)
+            {
+                call.addOnRemoteParticipantsUpdatedListener(this::OnRemoteParticipantsUpdated);
+
+                AddRemoteParticipantList(call.getRemoteParticipants());
+            }
+
+            runOnUiThread(() -> progressDialog.hide());
+        });
     }
 
     private void OnRemoteParticipantsUpdated(ParticipantsUpdatedEvent event)
@@ -539,65 +578,61 @@ public class MainActivity extends AppCompatActivity
 
     private void OnIncomingVideoStreamStateChanged(IncomingVideoStream stream)
     {
+        if (incomingVideoStream != null && incomingVideoStream != stream)
+        {
+            if (stream.getState() == VideoStreamState.AVAILABLE)
+            {
+                ShowMessage("This app only support 1 incoming video stream from 1 remote participant");
+            }
+
+            return;
+        }
+
         switch (stream.getState())
         {
             case AVAILABLE:
-                if (!incomingVideoStreamMap.containsKey(stream.getId()))
+                switch (stream.getType())
                 {
-                    switch (stream.getType())
-                    {
-                        case REMOTE_INCOMING:
-                            StartRemotePreview((RemoteVideoStream) stream);
-                            break;
-                        case RAW_INCOMING:
-                            RawIncomingVideoStream rawIncomingVideoStream = (RawIncomingVideoStream) stream;
-                            rawIncomingVideoStream.addOnRawVideoFrameReceivedListener(this::OnRawVideoFrameReceived);
-                            rawIncomingVideoStream.start();
+                    case REMOTE_INCOMING:
+                        remoteVideoStream = (RemoteVideoStream) stream;
+                        StartRemotePreview();
+                        break;
+                    case RAW_INCOMING:
+                        rawIncomingVideoStream = (RawIncomingVideoStream) stream;
+                        rawIncomingVideoStream.addOnRawVideoFrameReceivedListener(this::OnRawVideoFrameReceived);
+                        rawIncomingVideoStream.start();
 
-                            break;
-                    }
-
-                    incomingVideoStreamMap.put(stream.getId(), stream);
+                        break;
                 }
 
+                incomingVideoStream = stream;
                 break;
             case STARTED:
-                if (incomingVideoStreamMap.containsKey(stream.getId()))
+                if (stream.getType() == VideoStreamType.RAW_INCOMING)
                 {
-                    if (stream.getType() == VideoStreamType.RAW_INCOMING)
-                    {
-                        StartRawIncomingPreview();
-                    }
+                    StartRawIncomingPreview();
                 }
+
                 break;
             case STOPPED:
-                if (incomingVideoStreamMap.containsKey(stream.getId()))
+                switch (stream.getType())
                 {
-                    switch (stream.getType())
-                    {
-                        case REMOTE_INCOMING:
-                            StopRemotePreview();
-                            break;
-                        case RAW_INCOMING:
-                            StopRawIncomingPreview();
-                            break;
-                    }
+                    case REMOTE_INCOMING:
+                        StopRemotePreview();
+                        break;
+                    case RAW_INCOMING:
+                        StopRawIncomingPreview();
+                        break;
                 }
 
                 break;
             case NOT_AVAILABLE:
-                if (incomingVideoStreamMap.containsKey(stream.getId()))
+                if (stream.getType() == VideoStreamType.RAW_INCOMING)
                 {
-                    if (stream.getType() == VideoStreamType.RAW_INCOMING)
-                    {
-                        RawIncomingVideoStream rawIncomingVideoStream =
-                                (RawIncomingVideoStream) incomingVideoStreamMap.get(stream.getId());
-                        rawIncomingVideoStream.removeOnRawVideoFrameReceivedListener(this::OnRawVideoFrameReceived);
-                    }
-
-                    incomingVideoStreamMap.remove(stream.getId());
+                    rawIncomingVideoStream.removeOnRawVideoFrameReceivedListener(this::OnRawVideoFrameReceived);
                 }
 
+                incomingVideoStream = null;
                 break;
         }
     }
@@ -635,13 +670,14 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    private void StartRemotePreview(RemoteVideoStream remoteVideoStream)
+    private void StartRemotePreview()
     {
         if (incomingVideoStreamRendererView == null)
         {
             incomingVideoStreamRenderer = new VideoStreamRenderer(remoteVideoStream, this);
             incomingVideoStreamRendererView = incomingVideoStreamRenderer.createView(new CreateViewOptions(ScalingMode.FIT));
-            runOnUiThread(() -> incomingVideoContainer.addView(incomingVideoStreamRendererView, 0));
+
+            AddVideoView(incomingVideoContainer, incomingVideoStreamRendererView);
         }
     }
 
@@ -649,7 +685,7 @@ public class MainActivity extends AppCompatActivity
     {
         if (incomingVideoStreamRendererView != null)
         {
-            runOnUiThread(() -> incomingVideoContainer.removeViewAt(0));
+            RemoveVideoView(incomingVideoContainer);
 
             incomingVideoStreamRendererView.dispose();
             incomingVideoStreamRendererView = null;
@@ -665,7 +701,7 @@ public class MainActivity extends AppCompatActivity
         {
             incomingVideoFrameRenderer =
                     new VideoFrameRenderer(this, 320, 180, ScalingMode.FIT, false, false);
-            runOnUiThread(() -> incomingVideoContainer.addView(incomingVideoFrameRenderer.GetView()));
+            AddVideoView(incomingVideoContainer, incomingVideoFrameRenderer.GetView());
         }
     }
 
@@ -673,9 +709,12 @@ public class MainActivity extends AppCompatActivity
     {
         if (incomingVideoFrameRenderer != null)
         {
-            runOnUiThread(() -> incomingVideoContainer.removeViewAt(0));
-            incomingVideoFrameRenderer.Dispose();
-            incomingVideoFrameRenderer = null;
+            runOnUiThread(() ->
+            {
+                RemoveVideoView(incomingVideoContainer);
+                incomingVideoFrameRenderer.ClearView();
+                incomingVideoFrameRenderer = null;
+            });
         }
     }
 
@@ -685,7 +724,7 @@ public class MainActivity extends AppCompatActivity
         {
             outgoingVideoStreamRenderer = new VideoStreamRenderer(localVideoStream, this);
             outgoingVideoStreamRendererView = outgoingVideoStreamRenderer.createView(new CreateViewOptions(ScalingMode.FIT));
-            runOnUiThread(() -> outgoingVideoContainer.addView(outgoingVideoStreamRendererView, 0));
+            AddVideoView(outgoingVideoContainer, outgoingVideoStreamRendererView);
         }
     }
 
@@ -693,7 +732,7 @@ public class MainActivity extends AppCompatActivity
     {
         if (outgoingVideoStreamRendererView != null)
         {
-            runOnUiThread(() -> outgoingVideoContainer.removeViewAt(0));
+            RemoveVideoView(outgoingVideoContainer);
 
             outgoingVideoStreamRendererView.dispose();
             outgoingVideoStreamRendererView = null;
@@ -717,7 +756,7 @@ public class MainActivity extends AppCompatActivity
 
             outgoingVideoFrameRenderer =
                     new VideoFrameRenderer(this, 120, 67, ScalingMode.FIT, true, true);
-            runOnUiThread(() -> outgoingVideoContainer.addView(outgoingVideoFrameRenderer.GetView()));
+            AddVideoView(outgoingVideoContainer, outgoingVideoFrameRenderer.GetView());
         }
     }
 
@@ -725,9 +764,12 @@ public class MainActivity extends AppCompatActivity
     {
         if (cameraCaptureService != null)
         {
-            runOnUiThread(() -> outgoingVideoContainer.removeViewAt(0));
-            outgoingVideoFrameRenderer.Dispose();
-            outgoingVideoFrameRenderer = null;
+            runOnUiThread(() ->
+            {
+                RemoveVideoView(outgoingVideoContainer);
+                outgoingVideoFrameRenderer.ClearView();
+                outgoingVideoFrameRenderer = null;
+            });
 
             cameraCaptureService.RemoveRawVideoFrameListener(this::OnRawVideoFrameCaptured);
             cameraCaptureService.Stop();
@@ -751,7 +793,7 @@ public class MainActivity extends AppCompatActivity
 
             outgoingVideoFrameRenderer =
                     new VideoFrameRenderer(this, 120, 67, ScalingMode.FIT, false, true);
-            runOnUiThread(() -> outgoingVideoContainer.addView(outgoingVideoFrameRenderer.GetView()));
+            AddVideoView(outgoingVideoContainer, outgoingVideoFrameRenderer.GetView());
         }
     }
 
@@ -759,14 +801,35 @@ public class MainActivity extends AppCompatActivity
     {
         if (screenCaptureService != null)
         {
-            runOnUiThread(() -> outgoingVideoContainer.removeViewAt(0));
-            outgoingVideoFrameRenderer.Dispose();
-            outgoingVideoFrameRenderer = null;
+            runOnUiThread(() ->
+            {
+                RemoveVideoView(outgoingVideoContainer);
+                outgoingVideoFrameRenderer.ClearView();
+                outgoingVideoFrameRenderer = null;
+            });
 
             screenCaptureService.RemoveRawVideoFrameListener(this::OnRawVideoFrameCaptured);
             screenCaptureService.Stop();
             screenCaptureService = null;
         }
+    }
+
+    private void AddVideoView(ViewGroup videoContainer, View videoView)
+    {
+        runOnUiThread(() ->
+        {
+            videoContainer.setBackgroundResource(R.drawable.acs_spool_ui_black_border_black_background);
+            videoContainer.addView(videoView);
+        });
+    }
+
+    private void RemoveVideoView(ViewGroup videoContainer)
+    {
+        runOnUiThread(() ->
+        {
+            videoContainer.removeViewAt(0);
+            videoContainer.setBackgroundResource(R.drawable.acs_spool_ui_black_border);
+        });
     }
 
     public void EndCall(View view)
@@ -776,15 +839,26 @@ public class MainActivity extends AppCompatActivity
             return;
         }
 
-        Executors.newCachedThreadPool().submit(() -> {
+        runOnUiThread(() -> progressDialog.show());
+        Executors.newCachedThreadPool().submit(() ->
+        {
             try
             {
                 if (call != null)
                 {
+                    for (RemoteParticipant remoteParticipant : call.getRemoteParticipants())
+                    {
+                        remoteParticipant.removeOnVideoStreamStateChangedListener(this::OnVideoStreamStateChanged);
+                    }
+
                     call.removeOnRemoteParticipantsUpdatedListener(this::OnRemoteParticipantsUpdated);
 
                     StopRemotePreview();
                     StopRawIncomingPreview();
+
+                    incomingVideoStream = null;
+                    remoteVideoStream = null;
+                    rawIncomingVideoStream = null;
 
                     StopCameraCaptureService();
                     StopScreenShareCaptureService();
@@ -817,18 +891,21 @@ public class MainActivity extends AppCompatActivity
                     call = null;
                 }
 
-                incomingVideoStreamMap.clear();
-
                 callInProgress = false;
-                runOnUiThread(() -> {
-                    settingsContainer.setVisibility(View.VISIBLE);
+
+                runOnUiThread(() ->
+                {
+                    callSettingsContainer.setVisibility(View.VISIBLE);
                     videoContainer.setVisibility(View.GONE);
                 });
             }
             catch (Exception ex)
             {
                 ShowMessage("Call failed to stop");
+                ex.printStackTrace();
             }
+
+            runOnUiThread(() -> progressDialog.hide());
         });
     }
 
@@ -856,6 +933,13 @@ public class MainActivity extends AppCompatActivity
 
     private boolean ValidateCallSettings()
     {
+        String meetingLink = meetingLinkEditText.getText().toString();
+        if (!meetingLink.startsWith("https://") || meetingLink.equals("Teams meeting link"))
+        {
+            ShowMessage("Invalid teams meeting link");
+            return false;
+        }
+
         boolean isValid = true;
         switch (outgoingVideoStreamType)
         {

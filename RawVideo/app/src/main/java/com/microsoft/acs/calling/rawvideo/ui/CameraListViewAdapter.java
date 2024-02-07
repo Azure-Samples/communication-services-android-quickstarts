@@ -60,7 +60,7 @@ public class CameraListViewAdapter extends ArrayAdapter<String>
         String cameraFacingName = GetCameraFacingName(cameraFacing);
 
         TextView cameraNameTextView = view.findViewById(R.id.camera_name);
-        cameraNameTextView.setText(String.format("%s %s", cameraId, cameraFacingName));
+        cameraNameTextView.setText(String.format("%s/%s", cameraFacingName, cameraId));
 
         return view;
     }

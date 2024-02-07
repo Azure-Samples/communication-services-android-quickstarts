@@ -66,11 +66,6 @@ public class VideoFrameRenderer implements SurfaceHolder.Callback
         this.w = format.getStride1() / 4;
         this.h = format.getHeight();
 
-        RenderUsingSurfaceView(rawVideoFrameBuffer, orientation);
-    }
-
-    private void RenderUsingSurfaceView(RawVideoFrameBuffer rawVideoFrameBuffer, int orientation)
-    {
         ByteBuffer rgbaBuffer = rawVideoFrameBuffer.getBuffers().get(0);
         Bitmap rgbaBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         rgbaBitmap.copyPixelsFromBuffer(rgbaBuffer);
@@ -90,11 +85,6 @@ public class VideoFrameRenderer implements SurfaceHolder.Callback
             Canvas canvas = surfaceHolder.lockCanvas();
             if (canvas != null)
             {
-                ColorMatrix color = new ColorMatrix();
-                color.setSaturation(0);
-                Paint paint = new Paint();
-                paint.setColorFilter(new ColorMatrixColorFilter(color));
-
                 float leftOffset = (canvas.getWidth() - scaledW) / 2f;
                 float topOffset = (canvas.getHeight() - scaledH) / 2f;
 
@@ -103,7 +93,6 @@ public class VideoFrameRenderer implements SurfaceHolder.Callback
                         topOffset));
 
                 canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-                //canvas.drawBitmap(bitmap, leftOffset, topOffset, paint);
                 canvas.drawBitmap(bitmap, leftOffset, topOffset, null);
                 bitmap.recycle();
             }
@@ -214,10 +203,5 @@ public class VideoFrameRenderer implements SurfaceHolder.Callback
     public SurfaceView GetView()
     {
         return surfaceView;
-    }
-
-    public void Dispose()
-    {
-        ClearView();
     }
 }
