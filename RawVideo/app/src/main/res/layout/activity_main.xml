@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity"
+    android:id="@+id/main_container"
+    >
+    <LinearLayout
+        android:id="@+id/token_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        app:layout_constraintTop_toTopOf="@+id/main_container"
+        app:layout_constraintBottom_toBottomOf="@+id/main_container"
+        app:layout_constraintLeft_toLeftOf="@+id/main_container"
+        app:layout_constraintRight_toRightOf="@+id/main_container"
+        >
+        <EditText
+            android:id="@+id/token_edit_text"
+            android:layout_width="300dp"
+            android:layout_height="60dp"
+            android:hint="ACS token"
+            android:paddingLeft="15dp"
+            android:paddingRight="15dp"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/acs_spool_ui_black_border"
+            android:singleLine="true"
+            />
+
+        <Button
+            android:id="@+id/init_resources"
+            android:layout_width="200dp"
+            android:layout_height="60dp"
+            android:text="Init Resources"
+            android:onClick="GetPermissions"
+            android:backgroundTint="#0000FF"
+            android:textColor="@color/white"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/call_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintTop_toTopOf="@+id/main_container"
+        app:layout_constraintBottom_toBottomOf="@+id/main_container"
+        app:layout_constraintLeft_toLeftOf="@+id/main_container"
+        app:layout_constraintRight_toRightOf="@+id/main_container"
+        android:visibility="gone"
+        >
+        <LinearLayout
+            android:id="@+id/call_settings_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintTop_toTopOf="@+id/main_container"
+            android:gravity="center"
+            >
+            <EditText
+                android:id="@+id/meeting_link_edit_text"
+                android:layout_width="300dp"
+                android:layout_height="60dp"
+                android:hint="Teams meeting link"
+                android:paddingLeft="15dp"
+                android:paddingRight="15dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/acs_spool_ui_black_border"
+                android:singleLine="true"
+                />
+
+            <Spinner
+                android:id="@+id/incoming_video_stream_type_spinner"
+                android:layout_width="300dp"
+                android:layout_height="60dp"
+                android:layout_marginTop="10dp"
+                android:paddingLeft="15dp"
+                android:paddingRight="15dp"
+                android:background="@drawable/acs_spool_ui_black_border"
+                />
+
+            <Spinner
+                android:id="@+id/outgoing_video_stream_type_spinner"
+                android:layout_width="300dp"
+                android:layout_height="60dp"
+                android:layout_marginTop="10dp"
+                android:paddingLeft="15dp"
+                android:paddingRight="15dp"
+                android:background="@drawable/acs_spool_ui_black_border"
+                />
+
+            <Spinner
+                android:id="@+id/video_device_info_spinner"
+                android:layout_width="300dp"
+                android:layout_height="60dp"
+                android:layout_marginTop="10dp"
+                android:paddingLeft="15dp"
+                android:paddingRight="15dp"
+                android:background="@drawable/acs_spool_ui_black_border"
+                android:visibility="gone"
+                />
+
+            <Spinner
+                android:id="@+id/camera_spinner"
+                android:layout_width="300dp"
+                android:layout_height="60dp"
+                android:layout_marginTop="10dp"
+                android:paddingLeft="15dp"
+                android:paddingRight="15dp"
+                android:background="@drawable/acs_spool_ui_black_border"
+                android:visibility="gone"
+                />
+        </LinearLayout>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/videoContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:visibility="gone"
+            >
+            <LinearLayout
+                android:id="@+id/outgoing_video_container"
+                android:layout_width="120dp"
+                android:layout_height="67dp"
+                app:layout_constraintLeft_toLeftOf="@+id/videoContainer"
+                app:layout_constraintTop_toTopOf="@+id/videoContainer"
+                android:orientation="vertical"
+                android:elevation="10dp"
+                android:layout_marginTop="5dp"
+                android:layout_marginLeft="5dp"
+                />
+
+            <LinearLayout
+                android:id="@+id/incoming_video_container"
+                android:layout_width="320dp"
+                android:layout_height="180dp"
+                app:layout_constraintLeft_toLeftOf="@+id/videoContainer"
+                app:layout_constraintTop_toTopOf="@+id/videoContainer"
+                android:orientation="vertical"
+                android:background="@drawable/acs_spool_ui_black_border"
+                android:elevation="1dp"
+                />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="5dp"
+            android:gravity="center"
+            >
+            <Button
+                android:id="@+id/start_Call"
+                android:layout_width="150dp"
+                android:layout_height="60dp"
+                android:text="Start Call"
+                android:onClick="StartCall"
+                android:layout_marginRight="10dp"
+                android:backgroundTint="#00FF00"
+                android:textColor="@color/black"
+                android:textAllCaps="false"
+                android:textSize="16sp"
+                />
+
+            <Button
+                android:id="@+id/end_call"
+                android:layout_width="150dp"
+                android:layout_height="60dp"
+                android:text="End Call"
+                android:onClick="EndCall"
+                android:backgroundTint="#FF0000"
+                android:textColor="@color/black"
+                android:textAllCaps="false"
+                android:textSize="16sp"
+                />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
