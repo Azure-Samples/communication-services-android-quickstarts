@@ -16,23 +16,26 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
-import com.azure.android.communication.common.CommunicationIdentifier;
-import com.azure.android.communication.common.CommunicationUserIdentifier;
-import com.azure.android.communication.calling.Call;
-import com.azure.android.communication.calling.CallAgent;
 import com.azure.android.communication.calling.CallClient;
 import com.azure.android.communication.calling.HangUpOptions;
+//import com.azure.android.communication.calling.StartTeamsCallOptions;
+import com.azure.android.communication.calling.StartTeamsCallOptions;
+import com.azure.android.communication.calling.TeamsCall;
+import com.azure.android.communication.calling.TeamsCallAgent;
+//import com.azure.android.communication.calling.TeamsCallAgentOptions;
+import com.azure.android.communication.common.CommunicationCloudEnvironment;
+import com.azure.android.communication.common.CommunicationIdentifier;
 import com.azure.android.communication.common.CommunicationTokenCredential;
-import com.azure.android.communication.calling.StartCallOptions;
+import com.azure.android.communication.common.MicrosoftTeamsUserIdentifier;
 
-public class MainActivity extends AppCompatActivity {
+public class MainCTEActivity extends AppCompatActivity {
     private static final String[] allPermissions = new String[] { Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_PHONE_STATE };
-    private static final String UserToken = "<User_Access_Token>";
+    private static final String UserToken = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjYwNUVCMzFEMzBBMjBEQkRBNTMxODU2MkM4QTM2RDFCMzIyMkE2MTkiLCJ4NXQiOiJZRjZ6SFRDaURiMmxNWVZpeUtOdEd6SWlwaGsiLCJ0eXAiOiJKV1QifQ.eyJza3lwZWlkIjoib3JnaWQ6MGQyZGEwYzUtZTc2My00YTIyLWJiNDYtYWY4MjExMWNjN2FlIiwic2NwIjoxMDI0LCJjc2kiOiIxNzA2NTUxNTgyIiwiZXhwIjoxNzA2NTU3MDE0LCJyZ24iOiJhbWVyIiwidGlkIjoiYmM2MWY0ZmMtMjZkNy00MTFlLTkxYTktNGMxNDY5MWRhYmRmIiwiYWNzU2NvcGUiOiJ2b2lwLGNoYXQiLCJyZXNvdXJjZUlkIjoiZWZkM2MyMjktYjIxMi00MzdhLTk0NWQtOTIzMjZmMTNhMWJlIiwiYWFkX2lhdCI6IjE3MDY1NTE1ODIiLCJhYWRfdXRpIjoidGQtZUg1ejZRMENOcHZxbjhwcC1BQSIsImFhZF9hcHBpZCI6IjFmZDUxMThlLTI1NzYtNDI2My04MTMwLTk1MDMwNjRjODM3YSIsImlhdCI6MTcwNjU1MTg4Mn0.jijqje8NmdQy2XK2k32aSFRy7x4hXlom7aTBJaS-NmSIMinkysA6AsqpY7IEl9hZGasrJ8UqQtycnnk_1KnsWgdDC-d_6kEb5NGMSalXsEqzeONJvETk7EBB4RRMRMhFqR9YqGFgPmIfkHPHdLPC0eTZvOWnESRYYv1H6ziEJkbLJmI5Vl_46XPL881wfmTkoj7HUa6VMAgaWacVJiPNTMerVR6w6YU3bRSpIHTAfjRLp7h56xux1GCtBbfPlME6RmS42WPO_gU8FLupjpTvZEaPsCfx_il_t0nHo9ychjrtwyVpMICLiLMAY-nbRuwFHTPs-Ik4BdLTAINkCvBakQ";
 
     TextView statusBar;
 
-    private CallAgent agent;
-    private Call call;
+    private TeamsCallAgent teamsAgent;
+    private TeamsCall teamsCall;
     private Button callButton;
 
     @Override
@@ -50,12 +53,12 @@ public class MainActivity extends AppCompatActivity {
         hangupButton.setOnClickListener(l -> endCall());
 
         statusBar = findViewById(R.id.status_bar);
-        
+
         setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
     }
 
     /**
-     * Start a call
+     * Start a teams call
      */
     private void startCall() {
         if (UserToken.startsWith("<")) {
@@ -69,14 +72,25 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Please enter callee", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        StartTeamsCallOptions options = new StartTeamsCallOptions();
         ArrayList<CommunicationIdentifier> participants = new ArrayList<>();
-        participants.add(new CommunicationUserIdentifier(calleeId));
-        StartCallOptions options = new StartCallOptions();
-        call = agent.startCall(
+        CommunicationIdentifier participant;
+        if (calleeId.startsWith("8:orgid:")){
+            participant = new MicrosoftTeamsUserIdentifier(calleeId.substring("8:orgid:".length())).setCloudEnvironment(CommunicationCloudEnvironment.PUBLIC);
+        } else if (calleeId.startsWith("8:dod:")) {
+            participant = new MicrosoftTeamsUserIdentifier(calleeId.substring("8:dod:".length())).setCloudEnvironment(CommunicationCloudEnvironment.DOD);
+        } else if (calleeId.startsWith("8:gcch:")) {
+            participant = new MicrosoftTeamsUserIdentifier(calleeId.substring("8:gcch:".length())).setCloudEnvironment(CommunicationCloudEnvironment.GCCH);
+        } else {
+            participant = new MicrosoftTeamsUserIdentifier(calleeId).setCloudEnvironment(CommunicationCloudEnvironment.PUBLIC);
+        }
+
+        teamsCall = teamsAgent.startCall(
                 getApplicationContext(),
-                participants,
+                participant,
                 options);
-        call.addOnStateChangedListener(p -> setStatus(call.getState().toString()));
+        teamsCall.addOnStateChangedListener(p -> setStatus(teamsCall.getState().toString()));
     }
 
     /**
@@ -84,19 +98,20 @@ public class MainActivity extends AppCompatActivity {
      */
     private void endCall() {
         try {
-            call.hangUp(new HangUpOptions()).get();
+            teamsCall.hangUp(new HangUpOptions()).get();
         } catch (ExecutionException | InterruptedException e) {
             Toast.makeText(this, "Unable to hang up call", Toast.LENGTH_SHORT).show();
         }
     }
 
     /**
-     * Create the call agent
+     * Create the teams call agent
      */
     private void createAgent() {
         try {
             CommunicationTokenCredential credential = new CommunicationTokenCredential(UserToken);
-            agent = new CallClient().createCallAgent(getApplicationContext(), credential).get();
+
+            teamsAgent = new CallClient().createTeamsCallAgent(getApplicationContext(), credential).get();
         } catch (Exception ex) {
             Toast.makeText(getApplicationContext(), "Failed to create call agent.", Toast.LENGTH_SHORT).show();
         }

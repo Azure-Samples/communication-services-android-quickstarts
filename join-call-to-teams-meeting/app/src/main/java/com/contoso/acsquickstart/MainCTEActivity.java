@@ -15,23 +15,23 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
-import com.azure.android.communication.calling.Call;
-import com.azure.android.communication.calling.CallAgent;
 import com.azure.android.communication.calling.CallClient;
 import com.azure.android.communication.calling.HangUpOptions;
 import com.azure.android.communication.calling.JoinCallOptions;
+import com.azure.android.communication.calling.TeamsCall;
+import com.azure.android.communication.calling.TeamsCallAgent;
 import com.azure.android.communication.common.CommunicationTokenCredential;
 import com.azure.android.communication.calling.TeamsMeetingLinkLocator;
 
-public class MainActivity extends AppCompatActivity {
+public class MainCTEActivity extends AppCompatActivity {
     private static final String[] allPermissions = new String[] { Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_PHONE_STATE };
     private static final String UserToken = "<User_Access_Token>";
 
     TextView callStatusBar;
     TextView recordingStatusBar;
 
-    private CallAgent agent;
-    private Call call;
+    private TeamsCallAgent teamsAgent;
+    private TeamsCall teamsCall;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,11 +70,11 @@ public class MainActivity extends AppCompatActivity {
         JoinCallOptions options = new JoinCallOptions();
         TeamsMeetingLinkLocator teamsMeetingLinkLocator = new TeamsMeetingLinkLocator(meetingLink);
 
-        call = agent.join(
+        teamsCall = teamsAgent.join(
                 getApplicationContext(),
                 teamsMeetingLinkLocator,
                 options);
-        call.addOnStateChangedListener(p -> setCallStatus(call.getState().toString()));
+        teamsCall.addOnStateChangedListener((p -> setCallStatus(teamsCall.getState().toString())));
     }
 
     /**
@@ -82,21 +82,21 @@ public class MainActivity extends AppCompatActivity {
      */
     private void leaveMeeting() {
         try {
-            call.hangUp(new HangUpOptions()).get();
+            teamsCall.hangUp(new HangUpOptions()).get();
         } catch (ExecutionException | InterruptedException e) {
             Toast.makeText(this, "Unable to leave meeting", Toast.LENGTH_SHORT).show();
         }
     }
 
     /**
-     * Create the call agent
+     * Create the teams call agent
      */
     private void createAgent() {
         try {
             CommunicationTokenCredential credential = new CommunicationTokenCredential(UserToken);
-            agent = new CallClient().createCallAgent(getApplicationContext(), credential).get();
+            teamsAgent = new CallClient().createTeamsCallAgent(getApplicationContext(), credential).get();
         } catch (Exception ex) {
-            Toast.makeText(getApplicationContext(), "Failed to create call agent.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), "Failed to create teams call agent.", Toast.LENGTH_SHORT).show();
         }
     }
 

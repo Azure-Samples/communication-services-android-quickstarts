@@ -4,25 +4,25 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context="${launchApp}">
 
-    <RadioGroup
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+<!--    <RadioGroup-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content">-->
 
-        <RadioButton
-            android:id="@+id/acs_call"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="ACS" />
+<!--        <RadioButton-->
+<!--            android:id="@+id/acs_call"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="ACS" />-->
 
-        <RadioButton
-            android:id="@+id/cte_call"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="CTE" />
+<!--        <RadioButton-->
+<!--            android:id="@+id/cte_call"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="CTE" />-->
 
-    </RadioGroup>
+<!--    </RadioGroup>-->
 
     <EditText
         android:id="@+id/callee_id"
