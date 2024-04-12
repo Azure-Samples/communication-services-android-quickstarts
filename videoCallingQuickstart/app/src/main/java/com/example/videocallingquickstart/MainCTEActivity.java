@@ -17,6 +17,8 @@ import android.widget.RadioButton;
 import android.widget.Toast;
 import android.widget.LinearLayout;
 import android.content.Context;
+
+import com.azure.android.communication.calling.AcceptTeamsCallOptions;
 import com.azure.android.communication.calling.CallState;
 import com.azure.android.communication.calling.CallingCommunicationException;
 import com.azure.android.communication.calling.IncomingVideoOptions;
@@ -331,19 +333,20 @@ public class MainCTEActivity extends AppCompatActivity {
         if (teamsIncomingCall == null) {
             return;
         }
-        AcceptCallOptions acceptCallOptions = new AcceptCallOptions();
+        AcceptTeamsCallOptions acceptTeamsCallOptions = new AcceptTeamsCallOptions();
         List<VideoDeviceInfo> cameras = deviceManager.getCameras();
         if(!cameras.isEmpty()) {
             currentCamera = getNextAvailableCamera(null);
             currentVideoStream = new LocalVideoStream(currentCamera, context);
             LocalVideoStream[] videoStreams = new LocalVideoStream[1];
             videoStreams[0] = currentVideoStream;
-            VideoOptions videoOptions = new VideoOptions(videoStreams);
-            acceptCallOptions.setVideoOptions(videoOptions);
+            OutgoingVideoOptions videoOptions = new OutgoingVideoOptions();
+            videoOptions.setOutgoingVideoStreams(Arrays.asList(videoStreams));
+            acceptTeamsCallOptions.setOutgoingVideoOptions(videoOptions);
             showPreview(currentVideoStream);
         }
         try {
-            teamsCall = teamsIncomingCall.accept(context, acceptCallOptions).get();
+            teamsCall = teamsIncomingCall.accept(context, acceptTeamsCallOptions).get();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {

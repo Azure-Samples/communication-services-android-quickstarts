@@ -18,6 +18,7 @@ import java.util.concurrent.ExecutionException;
 import com.azure.android.communication.calling.CallClient;
 import com.azure.android.communication.calling.HangUpOptions;
 import com.azure.android.communication.calling.JoinCallOptions;
+import com.azure.android.communication.calling.JoinTeamsCallOptions;
 import com.azure.android.communication.calling.TeamsCall;
 import com.azure.android.communication.calling.TeamsCallAgent;
 import com.azure.android.communication.common.CommunicationTokenCredential;
@@ -67,7 +68,7 @@ public class MainCTEActivity extends AppCompatActivity {
             return;
         }
 
-        JoinCallOptions options = new JoinCallOptions();
+        JoinTeamsCallOptions options = new JoinTeamsCallOptions();
         TeamsMeetingLinkLocator teamsMeetingLinkLocator = new TeamsMeetingLinkLocator(meetingLink);
 
         teamsCall = teamsAgent.join(
