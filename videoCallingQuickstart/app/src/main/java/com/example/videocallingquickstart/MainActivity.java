@@ -222,11 +222,6 @@ public class MainActivity extends AppCompatActivity {
     private void hangUp() {
         renderRemoteVideo = false;
         try {
-//            for(RemoteParticipant participant : call.getRemoteParticipants()){
-//                for (RemoteVideoStream stream : participant.getVideoStreams()){
-//                    stopRenderingVideo(stream);
-//                }
-//            }
             call.hangUp().get();
             switchSourceButton.setVisibility(View.INVISIBLE);
         } catch (ExecutionException | InterruptedException e) {
