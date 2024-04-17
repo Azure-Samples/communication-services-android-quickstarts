@@ -18,11 +18,9 @@ import java.util.concurrent.ExecutionException;
 
 import com.azure.android.communication.calling.CallClient;
 import com.azure.android.communication.calling.HangUpOptions;
-//import com.azure.android.communication.calling.StartTeamsCallOptions;
 import com.azure.android.communication.calling.StartTeamsCallOptions;
 import com.azure.android.communication.calling.TeamsCall;
 import com.azure.android.communication.calling.TeamsCallAgent;
-//import com.azure.android.communication.calling.TeamsCallAgentOptions;
 import com.azure.android.communication.common.CommunicationCloudEnvironment;
 import com.azure.android.communication.common.CommunicationIdentifier;
 import com.azure.android.communication.common.CommunicationTokenCredential;
