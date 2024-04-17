@@ -8,46 +8,32 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
-import com.azure.android.communication.calling.TeamsCallAgentOptions;
-import com.azure.android.communication.common.CommunicationCloudEnvironment;
 import com.azure.android.communication.common.CommunicationIdentifier;
 import com.azure.android.communication.common.CommunicationUserIdentifier;
 import com.azure.android.communication.calling.Call;
-import com.azure.android.communication.calling.TeamsCall;
 import com.azure.android.communication.calling.CallAgent;
-import com.azure.android.communication.calling.TeamsCallAgent;
 import com.azure.android.communication.calling.CallClient;
 import com.azure.android.communication.calling.HangUpOptions;
 import com.azure.android.communication.common.CommunicationTokenCredential;
 import com.azure.android.communication.calling.StartCallOptions;
-import com.azure.android.communication.calling.StartTeamsCallOptions;
-import com.azure.android.communication.common.MicrosoftTeamsUserIdentifier;
 
 public class MainActivity extends AppCompatActivity {
     private static final String[] allPermissions = new String[] { Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_PHONE_STATE };
     private static final String UserToken = "<User_Access_Token>";
-    private static final String TeamsUserToken = "<Teams_User_Access_Token>";
 
     TextView statusBar;
 
     private CallAgent agent;
-    private TeamsCallAgent teamsAgent;
     private Call call;
-    private TeamsCall teamsCall;
     private Button callButton;
-    RadioButton acsCall, cteCall;
-
-    private boolean isCte = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,13 +43,8 @@ public class MainActivity extends AppCompatActivity {
         callButton = findViewById(R.id.call_button);
 
         getAllPermissions();
-        setupAgent();
-
-        acsCall = findViewById(R.id.acs_call);
-        acsCall.setOnClickListener(this::onCallMethodChanged);
-        acsCall.setChecked(true);
-        cteCall = findViewById(R.id.cte_call);
-        cteCall.setOnClickListener(this::onCallMethodChanged);
+        createAgent();
+        callButton.setOnClickListener(l -> startCall());
 
         Button hangupButton = findViewById(R.id.hangup_button);
         hangupButton.setOnClickListener(l -> endCall());
@@ -99,49 +80,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Start a teams call
-     */
-    private void startTeamsCall() {
-        if (UserToken.startsWith("<")) {
-            Toast.makeText(this, "Please enter token in source code", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        EditText calleeIdView = findViewById(R.id.callee_id);
-        String calleeId = calleeIdView.getText().toString();
-        if (calleeId.isEmpty()) {
-            Toast.makeText(this, "Please enter callee", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        ArrayList<CommunicationIdentifier> participants = new ArrayList<>();
-        CommunicationIdentifier participant;
-        if (calleeId.startsWith("8:orgid:")){
-            participant = new MicrosoftTeamsUserIdentifier(calleeId.substring("8:orgid:".length())).setCloudEnvironment(CommunicationCloudEnvironment.PUBLIC);
-        } else if (calleeId.startsWith("8:dod:")) {
-            participant = new MicrosoftTeamsUserIdentifier(calleeId.substring("8:dod:".length())).setCloudEnvironment(CommunicationCloudEnvironment.DOD);
-        } else if (calleeId.startsWith("8:gcch:")) {
-            participant = new MicrosoftTeamsUserIdentifier(calleeId.substring("8:gcch:".length())).setCloudEnvironment(CommunicationCloudEnvironment.GCCH);
-        } else {
-            participant = new MicrosoftTeamsUserIdentifier(calleeId).setCloudEnvironment(CommunicationCloudEnvironment.PUBLIC);
-        }
-        StartTeamsCallOptions options = new StartTeamsCallOptions();
-        teamsCall = teamsAgent.startCall(
-                getApplicationContext(),
-                participant,
-                options);
-        teamsCall.addOnStateChangedListener(p -> setStatus(teamsCall.getState().toString()));
-    }
-
-    /**
      * Ends the call previously started
      */
     private void endCall() {
         try {
-            if(isCte) {
-                teamsCall.hangUp(new HangUpOptions()).get();
-            }else {
-                call.hangUp(new HangUpOptions()).get();
-            }
+            call.hangUp(new HangUpOptions()).get();
         } catch (ExecutionException | InterruptedException e) {
             Toast.makeText(this, "Unable to hang up call", Toast.LENGTH_SHORT).show();
         }
@@ -157,36 +100,6 @@ public class MainActivity extends AppCompatActivity {
         } catch (Exception ex) {
             Toast.makeText(getApplicationContext(), "Failed to create call agent.", Toast.LENGTH_SHORT).show();
         }
-    }
-
-    /**
-     * Create the teams call agent
-     */
-    private void createTeamsAgent() {
-        try {
-            CommunicationTokenCredential credential = new CommunicationTokenCredential(TeamsUserToken);
-            TeamsCallAgentOptions options = new TeamsCallAgentOptions();
-            teamsAgent = new CallClient().createTeamsCallAgent(getApplicationContext(), credential, options).get();
-        } catch (Exception ex) {
-            Toast.makeText(getApplicationContext(), "Failed to create call agent.", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void setupAgent(){
-        if(isCte){
-            if (agent != null) {
-                agent.dispose();
-                agent = null;
-            }
-            createTeamsAgent();
-        }else{
-            if (teamsAgent != null) {
-                teamsAgent.dispose();
-                teamsAgent = null;
-            }
-            createAgent();
-        }
-        setupCallButton();
     }
 
     /**
@@ -219,34 +132,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void setupCallButton(){
-        if (isCte){
-            callButton.setOnClickListener(l -> startTeamsCall());
-        }else {
-            callButton.setOnClickListener(l -> startCall());
-        }
-    }
-
     /**
      * Shows message in the status bar
      */
     private void setStatus(String status) {
         runOnUiThread(() -> statusBar.setText(status));
-    }
-
-    private void onCallMethodChanged(View view){
-        boolean checked = ((RadioButton) view).isChecked();
-
-        switch (view.getId()){
-            case R.id.acs_call:
-                if (checked)
-                    isCte = false;
-                break;
-            case R.id.cte_call:
-                if (checked)
-                    isCte = true;
-                break;
-        }
-        setupAgent();
     }
 }

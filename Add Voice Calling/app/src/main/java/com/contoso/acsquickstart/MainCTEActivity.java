@@ -6,6 +6,7 @@ import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.media.AudioManager;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -15,86 +16,100 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
-import com.azure.android.communication.calling.Call;
-import com.azure.android.communication.calling.CallAgent;
 import com.azure.android.communication.calling.CallClient;
 import com.azure.android.communication.calling.HangUpOptions;
-import com.azure.android.communication.calling.JoinCallOptions;
+import com.azure.android.communication.calling.StartTeamsCallOptions;
+import com.azure.android.communication.calling.TeamsCall;
+import com.azure.android.communication.calling.TeamsCallAgent;
+import com.azure.android.communication.common.CommunicationCloudEnvironment;
+import com.azure.android.communication.common.CommunicationIdentifier;
 import com.azure.android.communication.common.CommunicationTokenCredential;
-import com.azure.android.communication.calling.TeamsMeetingLinkLocator;
+import com.azure.android.communication.common.MicrosoftTeamsUserIdentifier;
 
-public class MainActivity extends AppCompatActivity {
+public class MainCTEActivity extends AppCompatActivity {
     private static final String[] allPermissions = new String[] { Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_PHONE_STATE };
     private static final String UserToken = "<User_Access_Token>";
 
-    TextView callStatusBar;
-    TextView recordingStatusBar;
+    TextView statusBar;
 
-    private CallAgent agent;
-    private Call call;
+    private TeamsCallAgent teamsAgent;
+    private TeamsCall teamsCall;
+    private Button callButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        callButton = findViewById(R.id.call_button);
+
         getAllPermissions();
         createAgent();
-
-        Button joinMeetingButton = findViewById(R.id.join_meeting_button);
-        joinMeetingButton.setOnClickListener(l -> joinTeamsMeeting());
+        callButton.setOnClickListener(l -> startCall());
 
         Button hangupButton = findViewById(R.id.hangup_button);
-        hangupButton.setOnClickListener(l -> leaveMeeting());
+        hangupButton.setOnClickListener(l -> endCall());
 
-        callStatusBar = findViewById(R.id.call_status_bar);
-        recordingStatusBar = findViewById(R.id.recording_status_bar);
+        statusBar = findViewById(R.id.status_bar);
+
+        setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
     }
 
     /**
-     * Join Teams meeting
+     * Start a teams call
      */
-    private void joinTeamsMeeting() {
+    private void startCall() {
         if (UserToken.startsWith("<")) {
             Toast.makeText(this, "Please enter token in source code", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        EditText calleeIdView = findViewById(R.id.teams_meeting_link);
-        String meetingLink = calleeIdView.getText().toString();
-        if (meetingLink.isEmpty()) {
-            Toast.makeText(this, "Please enter Teams meeting link", Toast.LENGTH_SHORT).show();
+        EditText calleeIdView = findViewById(R.id.callee_id);
+        String calleeId = calleeIdView.getText().toString();
+        if (calleeId.isEmpty()) {
+            Toast.makeText(this, "Please enter callee", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        JoinCallOptions options = new JoinCallOptions();
-        TeamsMeetingLinkLocator teamsMeetingLinkLocator = new TeamsMeetingLinkLocator(meetingLink);
+        StartTeamsCallOptions options = new StartTeamsCallOptions();
+        ArrayList<CommunicationIdentifier> participants = new ArrayList<>();
+        CommunicationIdentifier participant;
+        if (calleeId.startsWith("8:orgid:")){
+            participant = new MicrosoftTeamsUserIdentifier(calleeId.substring("8:orgid:".length())).setCloudEnvironment(CommunicationCloudEnvironment.PUBLIC);
+        } else if (calleeId.startsWith("8:dod:")) {
+            participant = new MicrosoftTeamsUserIdentifier(calleeId.substring("8:dod:".length())).setCloudEnvironment(CommunicationCloudEnvironment.DOD);
+        } else if (calleeId.startsWith("8:gcch:")) {
+            participant = new MicrosoftTeamsUserIdentifier(calleeId.substring("8:gcch:".length())).setCloudEnvironment(CommunicationCloudEnvironment.GCCH);
+        } else {
+            participant = new MicrosoftTeamsUserIdentifier(calleeId).setCloudEnvironment(CommunicationCloudEnvironment.PUBLIC);
+        }
 
-        call = agent.join(
+        teamsCall = teamsAgent.startCall(
                 getApplicationContext(),
-                teamsMeetingLinkLocator,
+                participant,
                 options);
-        call.addOnStateChangedListener(p -> setCallStatus(call.getState().toString()));
+        teamsCall.addOnStateChangedListener(p -> setStatus(teamsCall.getState().toString()));
     }
 
     /**
-     * Leave from the meeting
+     * Ends the call previously started
      */
-    private void leaveMeeting() {
+    private void endCall() {
         try {
-            call.hangUp(new HangUpOptions()).get();
+            teamsCall.hangUp(new HangUpOptions()).get();
         } catch (ExecutionException | InterruptedException e) {
-            Toast.makeText(this, "Unable to leave meeting", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Unable to hang up call", Toast.LENGTH_SHORT).show();
         }
     }
 
     /**
-     * Create the call agent
+     * Create the teams call agent
      */
     private void createAgent() {
         try {
             CommunicationTokenCredential credential = new CommunicationTokenCredential(UserToken);
-            agent = new CallClient().createCallAgent(getApplicationContext(), credential).get();
+
+            teamsAgent = new CallClient().createTeamsCallAgent(getApplicationContext(), credential).get();
         } catch (Exception ex) {
             Toast.makeText(getApplicationContext(), "Failed to create call agent.", Toast.LENGTH_SHORT).show();
         }
@@ -131,21 +146,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Shows call status in status bar
+     * Shows message in the status bar
      */
-    private void setCallStatus(String status) {
-        runOnUiThread(() -> callStatusBar.setText(status));
-    }
-
-    /**
-     * Shows recording status status bar
-     */
-    private void setRecordingStatus(boolean status) {
-        if (status == true) {
-            runOnUiThread(() -> recordingStatusBar.setText("This call is being recorded"));
-        }
-        else {
-            runOnUiThread(() -> recordingStatusBar.setText(""));
-        }
+    private void setStatus(String status) {
+        runOnUiThread(() -> statusBar.setText(status));
     }
 }

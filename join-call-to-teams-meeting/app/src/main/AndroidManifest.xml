@@ -22,7 +22,7 @@
 When targeting Android client library 28+, this library needs to be explicitly referenced.
 See https://developer.android.com/about/versions/pie/android-9.0-changes-28#apache-p-->
         <uses-library android:name="org.apache.http.legacy" android:required="false"/>
-        <activity android:name=".MainActivity">
+        <activity android:name="${launchApp}">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
