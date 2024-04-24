@@ -18,6 +18,7 @@
         app:layout_constraintBottom_toBottomOf="@+id/main_container"
         app:layout_constraintLeft_toLeftOf="@+id/main_container"
         app:layout_constraintRight_toRightOf="@+id/main_container"
+        android:visibility="visible"
         >
         <EditText
             android:id="@+id/token_edit_text"
@@ -116,38 +117,44 @@
                 android:background="@drawable/acs_spool_ui_black_border"
                 android:visibility="gone"
                 />
+
+            <Spinner
+                android:id="@+id/video_format_spinner"
+                android:layout_width="300dp"
+                android:layout_height="60dp"
+                android:layout_marginTop="10dp"
+                android:paddingLeft="15dp"
+                android:paddingRight="15dp"
+                android:background="@drawable/acs_spool_ui_black_border"
+                android:visibility="gone"
+                />
         </LinearLayout>
 
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <LinearLayout
             android:id="@+id/videoContainer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
             android:visibility="gone"
+            android:orientation="vertical"
             >
             <LinearLayout
                 android:id="@+id/outgoing_video_container"
-                android:layout_width="120dp"
-                android:layout_height="67dp"
-                app:layout_constraintLeft_toLeftOf="@+id/videoContainer"
-                app:layout_constraintTop_toTopOf="@+id/videoContainer"
+                android:layout_width="320dp"
+                android:layout_height="180dp"
                 android:orientation="vertical"
-                android:elevation="10dp"
-                android:layout_marginTop="5dp"
-                android:layout_marginLeft="5dp"
+                android:background="@drawable/acs_spool_ui_black_border"
+                android:layout_marginBottom="10dp"
                 />
 
             <LinearLayout
                 android:id="@+id/incoming_video_container"
                 android:layout_width="320dp"
                 android:layout_height="180dp"
-                app:layout_constraintLeft_toLeftOf="@+id/videoContainer"
-                app:layout_constraintTop_toTopOf="@+id/videoContainer"
                 android:orientation="vertical"
                 android:background="@drawable/acs_spool_ui_black_border"
-                android:elevation="1dp"
                 />
-        </androidx.constraintlayout.widget.ConstraintLayout>
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"

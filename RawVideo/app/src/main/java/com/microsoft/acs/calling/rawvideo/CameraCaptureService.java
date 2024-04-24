@@ -11,23 +11,30 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
+import android.util.Size;
 import android.view.Surface;
 
 import androidx.annotation.NonNull;
 
 import com.azure.android.communication.calling.RawOutgoingVideoStream;
 import com.azure.android.communication.calling.RawVideoFrameBuffer;
+import com.azure.android.communication.calling.VideoStreamFormat;
+import com.azure.android.communication.calling.VideoStreamResolution;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 public class CameraCaptureService extends CaptureService implements ImageReader.OnImageAvailableListener
 {
@@ -35,27 +42,24 @@ public class CameraCaptureService extends CaptureService implements ImageReader.
 
     private final Activity context;
     private final String cameraId;
+    private final Size videoFormat;
     private CameraDevice cameraDevice;
     private CameraCaptureSession cameraCaptureSession;
     private Handler backgroundHandler;
     private HandlerThread backgroundHandlerThread;
     private Surface surface;
     private ImageReader imageReader;
-    private final int w;
-    private final int h;
 
     public CameraCaptureService(Activity context,
-                                RawOutgoingVideoStream rawOutgoingVideoStream,
+                                RawOutgoingVideoStream stream,
                                 String cameraId,
-                                int w,
-                                int h)
+                                Size videoFormat)
     {
-        super(rawOutgoingVideoStream);
+        super(stream);
 
         this.context = context;
         this.cameraId = cameraId;
-        this.w = w;
-        this.h = h;
+        this.videoFormat = videoFormat;
     }
 
     @SuppressLint("MissingPermission")
@@ -142,7 +146,7 @@ public class CameraCaptureService extends CaptureService implements ImageReader.
                 {
                     RawVideoFrameBuffer rawVideoFrameBuffer = new RawVideoFrameBuffer()
                             .setBuffers(Arrays.asList(byteBuffer))
-                            .setStreamFormat(rawOutgoingVideoStream.getFormat());
+                            .setStreamFormat(stream.getFormat());
 
                     SendRawVideoFrame(rawVideoFrameBuffer);
                 }
@@ -282,7 +286,11 @@ public class CameraCaptureService extends CaptureService implements ImageReader.
     @SuppressLint("WrongConstant")
     private void AttachSurface()
     {
-        imageReader = ImageReader.newInstance(w, h, ImageFormat.YUV_420_888, 1);
+        imageReader = ImageReader.newInstance(
+                videoFormat.getWidth(),
+                videoFormat.getHeight(),
+                ImageFormat.YUV_420_888,
+                1);
         imageReader.setOnImageAvailableListener(this, backgroundHandler);
         surface = imageReader.getSurface();
 
@@ -321,10 +329,14 @@ public class CameraCaptureService extends CaptureService implements ImageReader.
     {
         try
         {
-            CaptureRequest.Builder captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-            captureRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_START);
+            CaptureRequest.Builder captureRequestBuilder =
+                    cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            captureRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+                    CameraMetadata.CONTROL_AF_TRIGGER_START);
             captureRequestBuilder.addTarget(surface);
-            cameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, backgroundHandler);
+            cameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(),
+                    null,
+                    backgroundHandler);
         }
         catch (Exception ex)
         {
@@ -348,5 +360,46 @@ public class CameraCaptureService extends CaptureService implements ImageReader.
         }
 
         return cameraList;
+    }
+
+    public static List<Size> GetSupportedVideoFormats(Context context, String cameraId)
+    {
+        CameraManager cameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+        Size[] sizes = null;
+        List<Size> videoFormatList = new ArrayList<>();
+
+        try
+        {
+            CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
+            StreamConfigurationMap configMap =
+                    characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+            sizes = configMap.getOutputSizes(ImageFormat.YUV_420_888);
+        }
+        catch (Exception ex)
+        {
+            ex.printStackTrace();
+        }
+
+        if (sizes != null)
+        {
+            VideoStreamResolution[] resolutions = VideoStreamResolution.values();
+
+            List<Size> acsFormatList = Arrays.stream(resolutions)
+                    .map(x -> {
+                        VideoStreamFormat format = new VideoStreamFormat();
+                        format.setResolution(x);
+
+                        return new Size(format.getWidth(), format.getHeight());
+                    })
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            videoFormatList = Arrays.stream(sizes)
+                    .filter(acsFormatList::contains)
+                    .sorted(Comparator.comparing(Size::getWidth).reversed())
+                    .collect(Collectors.toList());
+        }
+
+        return videoFormatList;
     }
 }
