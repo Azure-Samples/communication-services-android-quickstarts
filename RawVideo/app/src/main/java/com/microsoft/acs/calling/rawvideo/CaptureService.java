@@ -14,12 +14,12 @@ public abstract class CaptureService
     private static final String TAG = "CaptureService";
 
     private final Set<CaptureServiceListener> listeners;
-    protected final RawOutgoingVideoStream rawOutgoingVideoStream;
+    protected final RawOutgoingVideoStream stream;
     protected int orientation = 0;
 
-    protected CaptureService(RawOutgoingVideoStream rawOutgoingVideoStream)
+    protected CaptureService(RawOutgoingVideoStream stream)
     {
-        this.rawOutgoingVideoStream = rawOutgoingVideoStream;
+        this.stream = stream;
         listeners = new HashSet<>();
     }
 
@@ -30,7 +30,7 @@ public abstract class CaptureService
             try
             {
                 Log.d(TAG, "SendRawVideoFrame trace, sending rawVideoFrame");
-                rawOutgoingVideoStream.sendRawVideoFrame(rawVideoFrameBuffer).get();
+                stream.sendRawVideoFrame(rawVideoFrameBuffer).get();
             }
             catch (Exception ex)
             {
@@ -54,9 +54,9 @@ public abstract class CaptureService
 
     private boolean CanSendRawVideoFrames()
     {
-        return rawOutgoingVideoStream != null &&
-                rawOutgoingVideoStream.getFormat() != null &&
-                rawOutgoingVideoStream.getState() == VideoStreamState.STARTED;
+        return stream != null &&
+                stream.getFormat() != null &&
+                stream.getState() == VideoStreamState.STARTED;
     }
 
     public void AddRawVideoFrameListener(CaptureServiceListener listener)

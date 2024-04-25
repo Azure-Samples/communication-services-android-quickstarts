@@ -8,12 +8,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.projection.MediaProjectionManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.DisplayMetrics;
+import android.util.Size;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -25,7 +25,6 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
 import com.azure.android.communication.calling.Call;
 import com.azure.android.communication.calling.CallAgent;
@@ -65,6 +64,7 @@ import com.azure.android.communication.calling.VirtualOutgoingVideoStream;
 import com.azure.android.communication.common.CommunicationTokenCredential;
 import com.microsoft.acs.calling.rawvideo.ui.CameraListViewAdapter;
 import com.microsoft.acs.calling.rawvideo.ui.VideoDeviceListViewAdapter;
+import com.microsoft.acs.calling.rawvideo.ui.VideoFormatViewAdapter;
 import com.microsoft.acs.calling.rawvideo.ui.VideoStreamTypeListViewAdapter;
 
 import java.util.ArrayList;
@@ -76,22 +76,25 @@ public class MainActivity extends AppCompatActivity
 {
     // UI
     private LinearLayout callSettingsContainer;
-    private ConstraintLayout videoContainer;
+    private LinearLayout videoContainer;
     private EditText tokenEditText;
     private EditText meetingLinkEditText;
     private Spinner videoDeviceInfoSpinner;
     private Spinner cameraSpinner;
+    private Spinner videoFormatSpinner;
     private LinearLayout outgoingVideoContainer;
     private LinearLayout incomingVideoContainer;
     private ProgressDialog progressDialog;
     private int selectVideoDeviceInfoIndex = -1;
-    private int selectCameraIndex = -1;
+    private int cameraIndex = -1;
+    private int videoFormatListIndex = -1;
 
     // App
     private List<VideoStreamType> outgoingVideoStreamTypeList;
     private List<VideoStreamType> incomingVideoStreamTypeList;
     private List<VideoDeviceInfo> videoDeviceInfoList;
     private List<String> cameraList;
+    private List<Size> videoFormatList;
     private CallClient callClient;
     private CallAgent callAgent;
     private Call call;
@@ -200,14 +203,17 @@ public class MainActivity extends AppCompatActivity
                     case LOCAL_OUTGOING:
                         videoDeviceInfoSpinner.setVisibility(View.VISIBLE);
                         cameraSpinner.setVisibility(View.GONE);
+                        videoFormatSpinner.setVisibility(View.GONE);
                         break;
                     case VIRTUAL_OUTGOING:
                         cameraSpinner.setVisibility(View.VISIBLE);
                         videoDeviceInfoSpinner.setVisibility(View.GONE);
+                        videoFormatSpinner.setVisibility(View.VISIBLE);
                         break;
                     case SCREEN_SHARE_OUTGOING:
                         videoDeviceInfoSpinner.setVisibility(View.GONE);
                         cameraSpinner.setVisibility(View.GONE);
+                        videoFormatSpinner.setVisibility(View.GONE);
                         break;
                 }
             }
@@ -238,14 +244,35 @@ public class MainActivity extends AppCompatActivity
         cameraList = CameraCaptureService.GetCameraList(this);
         CameraListViewAdapter cameraListViewAdapter = new CameraListViewAdapter(this, cameraList);
 
-        cameraSpinner = findViewById(R.id.camera_spinner);;
+        cameraSpinner = findViewById(R.id.camera_spinner);
         cameraSpinner.setAdapter(cameraListViewAdapter);
         cameraSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener()
         {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int index, long id)
             {
-                selectCameraIndex = index;
+                cameraIndex = index;
+                videoFormatListIndex = -1;
+
+                String cameraId = cameraList.get(cameraIndex);
+                videoFormatList = CameraCaptureService.GetSupportedVideoFormats(getApplicationContext(), cameraId);
+
+                VideoFormatViewAdapter videoFormatViewAdapter =
+                        new VideoFormatViewAdapter(getApplicationContext(), videoFormatList);
+                videoFormatSpinner.setAdapter(videoFormatViewAdapter);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) { }
+        });
+
+        videoFormatSpinner = findViewById(R.id.video_format_spinner);
+        videoFormatSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener()
+        {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int index, long id)
+            {
+                videoFormatListIndex = index;
             }
 
             @Override
@@ -505,17 +532,17 @@ public class MainActivity extends AppCompatActivity
         switch (outgoingVideoStreamType)
         {
             case VIRTUAL_OUTGOING:
-                format.setResolution(VideoStreamResolution.P360);
-                w = format.getWidth();
-                h = format.getHeight();
+                Size videoFormat = videoFormatList.get(videoFormatListIndex);
+                w = videoFormat.getWidth();
+                h = videoFormat.getHeight();
                 break;
             case SCREEN_SHARE_OUTGOING:
                 GetDisplaySize();
-                format.setWidth(w);
-                format.setHeight(h);
                 break;
         }
 
+        format.setWidth(w);
+        format.setHeight(h);
         format.setStride1(w * 4);
 
         return format;
@@ -749,14 +776,13 @@ public class MainActivity extends AppCompatActivity
         {
             cameraCaptureService = new CameraCaptureService(this,
                     virtualOutgoingVideoStream,
-                    cameraList.get(selectCameraIndex),
-                    w,
-                    h);
+                    cameraList.get(cameraIndex),
+                    videoFormatList.get(videoFormatListIndex));
             cameraCaptureService.AddRawVideoFrameListener(this::OnRawVideoFrameCaptured);
             cameraCaptureService.Start();
 
             outgoingVideoFrameRenderer =
-                    new VideoFrameRenderer(this, 120, 67, ScalingMode.FIT, true, true);
+                    new VideoFrameRenderer(this, 320, 180, ScalingMode.FIT, true, true);
             AddVideoView(outgoingVideoContainer, outgoingVideoFrameRenderer.GetView());
         }
     }
@@ -949,7 +975,7 @@ public class MainActivity extends AppCompatActivity
                 isValid = selectVideoDeviceInfoIndex != -1;
                 break;
             case VIRTUAL_OUTGOING:
-                isValid = selectCameraIndex != -1;
+                isValid = cameraIndex != -1;
                 break;
         }
 

@@ -34,14 +34,14 @@ public class ScreenCaptureService extends CaptureService implements ImageReader.
     }
 
     public ScreenCaptureService(Context context,
-                                RawOutgoingVideoStream rawOutgoingVideoStream,
+                                RawOutgoingVideoStream stream,
                                 int w,
                                 int h,
                                 int frameRate,
                                 int resultCode,
                                 Intent data)
     {
-        super(rawOutgoingVideoStream);
+        super(stream);
 
         this.context = context;
         this.w = w;
@@ -97,7 +97,7 @@ public class ScreenCaptureService extends CaptureService implements ImageReader.
 
                 if (byteBuffer != null)
                 {
-                    VideoStreamFormat format = rawOutgoingVideoStream.getFormat();
+                    VideoStreamFormat format = stream.getFormat();
                     format.setStride1(plane.getRowStride());
 
                     RawVideoFrameBuffer rawVideoFrameBuffer = new RawVideoFrameBuffer()
