@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent" android:layout_height="match_parent" tools:context=".MainActivity">
+
+    <EditText android:id="@+id/teams_meeting_thread_id" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="20dp" android:layout_marginTop="128dp" android:ems="10" android:hint="Meeting Thread Id" android:inputType="textUri" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" />
+
+    <EditText android:id="@+id/teams_meeting_link" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="20dp" android:layout_marginTop="64dp" android:ems="10" android:hint="Teams meeting link" android:inputType="textUri" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" />
+
+    <LinearLayout android:id="@+id/button_layout" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="30dp" android:gravity="center" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintHorizontal_bias="0.0" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@+id/teams_meeting_thread_id">
+
+        <Button android:id="@+id/join_meeting_button" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Join Meeting" />
+
+        <Button android:id="@+id/hangup_button" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Hangup" />
+
+    </LinearLayout>
+
+    <TextView android:id="@+id/call_status_bar" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="40dp" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView android:id="@+id/recording_status_bar" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="20dp" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" />
+
+    <ScrollView android:id="@+id/chat_box" android:layout_width="374dp" android:layout_height="294dp" android:layout_marginTop="40dp" android:layout_marginBottom="20dp" app:layout_constraintBottom_toTopOf="@+id/send_message_button" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@+id/button_layout" android:orientation="vertical" android:gravity="bottom" android:layout_gravity="bottom" android:fillViewport="true">
+
+        <LinearLayout android:id="@+id/chat_box_layout" android:orientation="vertical" android:layout_width="fill_parent" android:layout_height="fill_parent" android:gravity="bottom" android:layout_gravity="top" android:layout_alignParentBottom="true"/>
+    </ScrollView>
+
+    <EditText android:id="@+id/message_body" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="20dp" android:layout_marginTop="588dp" android:ems="10" android:inputType="textUri" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" tools:text="Type your message here..." tools:visibility="invisible" />
+
+    <Button android:id="@+id/send_message_button" android:layout_width="138dp" android:layout_height="45dp" android:layout_marginStart="133dp" android:layout_marginTop="48dp" android:layout_marginEnd="133dp" android:text="Send Message" android:visibility="invisible" app:layout_constraintBottom_toTopOf="@+id/recording_status_bar" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintHorizontal_bias="0.428" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@+id/chat_box" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
