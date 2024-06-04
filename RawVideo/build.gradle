@@ -1,14 +1,45 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
 buildscript {
     repositories {
-        google()
-        mavenCentral()
+        maven {
+            url 'https://skype.pkgs.visualstudio.com/_packaging/tps/maven/v1/'
+
+            credentials {
+                username property('gradle.wrapperUser')
+                password property('gradle.wrapperPassword')
+            }
+        }
     }
     dependencies {
-        classpath "com.android.tools.build:gradle:4.2.1"
+        classpath 'com.android.tools.build:gradle:4.2.1'
 
-        // NOTE: Do not place your application dependencies here; they belong
-        // in the individual module build.gradle files
+    }
+}
+
+allprojects {
+    repositories {
+        flatDir {
+            dirs "C:/Skype/Android/GA/SpoolCallingStack/native/sdk/android/AndroidACSCallingSDK/ACSCallingSDK/build/outputs/aar"
+        }
+
+        maven {
+            name 'vsoMavenSkype'
+            url 'https://skype.pkgs.visualstudio.com/_packaging/csc/maven/v1/'
+
+            credentials {
+                username property('gradle.wrapperUser')
+                password property('gradle.wrapperPassword')
+            }
+        }
+
+        maven {
+            url 'https://skype.pkgs.visualstudio.com/_packaging/tps/maven/v1/'
+
+            credentials {
+                username property('gradle.wrapperUser')
+                password property('gradle.wrapperPassword')
+            }
+        }
     }
 }
 

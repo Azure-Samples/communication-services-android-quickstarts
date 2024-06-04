@@ -33,6 +33,7 @@ import com.azure.android.communication.calling.CallClient;
 import com.azure.android.communication.calling.CallVideoStream;
 import com.azure.android.communication.calling.CreateViewOptions;
 import com.azure.android.communication.calling.DeviceManager;
+import com.azure.android.communication.calling.GroupCallLocator;
 import com.azure.android.communication.calling.HangUpOptions;
 import com.azure.android.communication.calling.IncomingVideoOptions;
 import com.azure.android.communication.calling.IncomingVideoStream;
@@ -70,6 +71,7 @@ import com.microsoft.acs.calling.rawvideo.ui.VideoStreamTypeListViewAdapter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity
@@ -145,6 +147,8 @@ public class MainActivity extends AppCompatActivity
         {
             tokenEditText.setText(savedToken);
         }
+
+        tokenEditText.setText("eyJhbGciOiJSUzI1NiIsImtpZCI6IjYwNUVCMzFEMzBBMjBEQkRBNTMxODU2MkM4QTM2RDFCMzIyMkE2MTkiLCJ4NXQiOiJZRjZ6SFRDaURiMmxNWVZpeUtOdEd6SWlwaGsiLCJ0eXAiOiJKV1QifQ.eyJza3lwZWlkIjoiYWNzOmVmZDNjMjI5LWIyMTItNDM3YS05NDVkLTkyMzI2ZjEzYTFiZV8wMDAwMDAyMC02NjNjLTUzNDgtMDhjOC0zZTNhMGQwMGE2Y2EiLCJzY3AiOjE3OTIsImNzaSI6IjE3MTcwMTk3ODMiLCJleHAiOjE3MTcxMDYxODMsInJnbiI6ImFtZXIiLCJhY3NTY29wZSI6InZvaXAiLCJyZXNvdXJjZUlkIjoiZWZkM2MyMjktYjIxMi00MzdhLTk0NWQtOTIzMjZmMTNhMWJlIiwicmVzb3VyY2VMb2NhdGlvbiI6InVuaXRlZHN0YXRlcyIsImlhdCI6MTcxNzAxOTc4M30.e_y15PMqSKHn9GpUVmdB_gDGWjFMKx6wCd38aeidGmskZhIab16qb0vj0c7TIv_SZp7COktHo1ZAT50iXuejJsXArck7xMovRT329iIWNDuX4pm-6Ep6X-z-KVTlxmo8WvdlwV0h-N5ufCDcNK3UyUsA95tlfUdi3ABR_8gV8yWsJafKNbNF2ZpGr53rEEEpqH0_lsUS06hVqGHvp2lcBjzNKcRG7k0zmOLop2vb5vL-Bl5gHETm12mncD9qNvG0nver_CKZVKirQIp70zf20qJUfvjVO9O_77RG3sOLUq0nFAZrQ_CdhwJq6ajkSh5enUwzVphapsMQZPnRNBZdMw");
 
         setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
     }
@@ -292,6 +296,8 @@ public class MainActivity extends AppCompatActivity
         {
             meetingLinkEditText.setText(savedMeetingLink);
         }
+
+        meetingLinkEditText.setText("https://teams.microsoft.com/l/meetup-join/19%3ameeting_ZTNlM2M4ZDUtOGI1Zi00YmQ3LWJkMGUtM2E2OTY3ZTdmZjYx%40thread.v2/0?context=%7b%22Tid%22%3a%2272f988bf-86f1-41af-91ab-2d7cd011db47%22%2c%22Oid%22%3a%22744e8f01-fbf6-40b3-b594-00792ff4276e%22%7d");
     }
 
     public void GetPermissions(View view)
@@ -409,7 +415,7 @@ public class MainActivity extends AppCompatActivity
 
         callInProgress = true;
 
-        runOnUiThread(() -> progressDialog.show());
+        //runOnUiThread(() -> progressDialog.show());
         Executors.newCachedThreadPool().submit(() ->
         {
             IncomingVideoOptions incomingVideoOptions = new IncomingVideoOptions()
@@ -421,8 +427,9 @@ public class MainActivity extends AppCompatActivity
                     .setIncomingVideoOptions(incomingVideoOptions)
                     .setOutgoingVideoOptions(outgoingVideoOptions);
 
-            JoinMeetingLocator locator =
-                    new TeamsMeetingLinkLocator(meetingLinkEditText.getText().toString());
+            JoinMeetingLocator locator = new TeamsMeetingLinkLocator(meetingLinkEditText.getText().toString());
+
+            //GroupCallLocator locator = new GroupCallLocator(UUID.fromString("6c62716a-abdd-4ffc-b5de-f024dc877080"));
 
             try
             {
@@ -455,7 +462,7 @@ public class MainActivity extends AppCompatActivity
                 AddRemoteParticipantList(call.getRemoteParticipants());
             }
 
-            runOnUiThread(() -> progressDialog.hide());
+            //runOnUiThread(() -> progressDialog.hide());
         });
     }
 
@@ -819,7 +826,7 @@ public class MainActivity extends AppCompatActivity
             screenCaptureService.Start();
 
             outgoingVideoFrameRenderer =
-                    new VideoFrameRenderer(this, 120, 67, ScalingMode.FIT, false, true);
+                    new VideoFrameRenderer(this, 320, 180, ScalingMode.FIT, false, true);
             AddVideoView(outgoingVideoContainer, outgoingVideoFrameRenderer.GetView());
         }
     }
@@ -866,7 +873,7 @@ public class MainActivity extends AppCompatActivity
             return;
         }
 
-        runOnUiThread(() -> progressDialog.show());
+        //runOnUiThread(() -> progressDialog.show());
         Executors.newCachedThreadPool().submit(() ->
         {
             try
@@ -933,7 +940,7 @@ public class MainActivity extends AppCompatActivity
                 ex.printStackTrace();
             }
 
-            runOnUiThread(() -> progressDialog.hide());
+            //runOnUiThread(() -> progressDialog.hide());
         });
     }
 
