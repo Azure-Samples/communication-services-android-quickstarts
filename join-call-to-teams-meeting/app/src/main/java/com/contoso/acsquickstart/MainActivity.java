@@ -22,6 +22,7 @@ import com.azure.android.communication.calling.HangUpOptions;
 import com.azure.android.communication.calling.JoinCallOptions;
 import com.azure.android.communication.common.CommunicationTokenCredential;
 import com.azure.android.communication.calling.TeamsMeetingLinkLocator;
+import com.azure.android.communication.calling.TeamsMeetingIdLocator;
 
 public class MainActivity extends AppCompatActivity {
     private static final String[] allPermissions = new String[] { Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_PHONE_STATE };
@@ -61,20 +62,38 @@ public class MainActivity extends AppCompatActivity {
         }
 
         EditText calleeIdView = findViewById(R.id.teams_meeting_link);
+        EditText calleeMeetingId = findViewById(R.id.teams_meeting_id);
+        EditText calleeMeetingPasscode = findViewById(R.id.teams_meeting_passcode);
         String meetingLink = calleeIdView.getText().toString();
-        if (meetingLink.isEmpty()) {
-            Toast.makeText(this, "Please enter Teams meeting link", Toast.LENGTH_SHORT).show();
+        String meetingId = calleeMeetingId.getText().toString();
+        String passcode = calleeMeetingPasscode.getText().toString();
+
+        if (meetingLink.isEmpty() && (meetingId.isEmpty() || passcode.isEmpty())) {
+            Toast.makeText(this, "Please enter Teams meeting link or Teams meeting id and passcode", Toast.LENGTH_SHORT).show();
             return;
         }
 
         JoinCallOptions options = new JoinCallOptions();
-        TeamsMeetingLinkLocator teamsMeetingLinkLocator = new TeamsMeetingLinkLocator(meetingLink);
+        if (!meetingLink.isEmpty()) {
+            TeamsMeetingLinkLocator teamsMeetingLinkLocator = new TeamsMeetingLinkLocator(meetingLink);
 
-        call = agent.join(
-                getApplicationContext(),
-                teamsMeetingLinkLocator,
-                options);
-        call.addOnStateChangedListener(p -> setCallStatus(call.getState().toString()));
+
+            call = agent.join(
+                    getApplicationContext(),
+                    teamsMeetingLinkLocator,
+                    options);
+            call.addOnStateChangedListener(p -> setCallStatus(call.getState().toString()));
+        } else {
+            TeamsMeetingIdLocator teamsMeetingIdLocator = new TeamsMeetingIdLocator(meetingId, passcode);
+
+
+            call = agent.join(
+                    getApplicationContext(),
+                    teamsMeetingIdLocator,
+                    options);
+            call.addOnStateChangedListener(p -> setCallStatus(call.getState().toString()));
+
+        }
     }
 
     /**
