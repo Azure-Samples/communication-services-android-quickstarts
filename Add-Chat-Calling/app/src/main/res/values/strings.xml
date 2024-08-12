@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">AcsQuickStart</string>
+    <string name="type_your_message">Type Message</string>
+    <string name="send_message">Send message</string>
+</resources>
