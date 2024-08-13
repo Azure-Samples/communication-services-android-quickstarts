@@ -49,9 +49,13 @@ import com.azure.android.core.util.RequestContext;
 import com.jakewharton.threetenabp.AndroidThreeTen;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String[] allPermissions = new String[] { Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_PHONE_STATE };
+    private static final String[] allPermissions = new String[] {
+                                                        Manifest.permission.RECORD_AUDIO,
+                                                        Manifest.permission.CAMERA,
+                                                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                                                        Manifest.permission.READ_PHONE_STATE };
     // Scope of the token should have both chat and calling
-    private static final String acsUserToken = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjYwNUVCMzFEMzBBMjBEQkRBNTMxODU2MkM4QTM2RDFCMzIyMkE2MTkiLCJ4NXQiOiJZRjZ6SFRDaURiMmxNWVZpeUtOdEd6SWlwaGsiLCJ0eXAiOiJKV1QifQ.eyJza3lwZWlkIjoiYWNzOmVmZDNjMjI5LWIyMTItNDM3YS05NDVkLTkyMzI2ZjEzYTFiZV8wMDAwMDAyMS1lYTE5LWIwZjAtYjhiYS1hNDNhMGQwMDkxNTEiLCJzY3AiOjE3OTIsImNzaSI6IjE3MjM1MjcwNzMiLCJleHAiOjE3MjM2MTM0NzMsInJnbiI6ImFtZXIiLCJhY3NTY29wZSI6ImNoYXQsdm9pcCIsInJlc291cmNlSWQiOiJlZmQzYzIyOS1iMjEyLTQzN2EtOTQ1ZC05MjMyNmYxM2ExYmUiLCJyZXNvdXJjZUxvY2F0aW9uIjoidW5pdGVkc3RhdGVzIiwiaWF0IjoxNzIzNTI3MDczfQ.SqC7dj5N9QBfK-vJT30VMOT5QnARnkc-kytsEM-mS8HANAZXwJaJ7pVvWD7B7yDxDRQoZuO6SBV-2FcQGUcaBzlJUxA9rwHDUf0TuVlunfkGcpjgomzIMYTb8sAtAYlpq-5sT4kDmheahwQlh8CqmVixDyqIh5NqXPCl6sAFCsFB3srfY23oHG8VHDE9kMmp2_i9b0QoVMJ3ifAeiFFKYDAJ1VZ5qede2T8yJP0eea2wRDR2e5lOGEJQ5DwConE_j6E2PunMxeht2nWSpHQj-MOQbK_2caDQvMOCzaOvmFwNNVbuZxK96Dd92eaGduBK7G90t-QDu18wLSXJaxKKqQ";
+    private static final String acsUserToken = "<ACS_TOKEN>";
     private String acsResourceEndpoint = "https://corertc-test-apps.unitedstates.communication.azure.com";
 
     TextView statusBar;
@@ -100,9 +104,9 @@ public class MainActivity extends AppCompatActivity {
         EditText sendMessageTextBox = findViewById(R.id.message_input_edit_text);
         String messageText = sendMessageTextBox.getText().toString();
         SendChatMessageOptions chatMessageOptions = new SendChatMessageOptions()
-                .setType(ChatMessageType.TEXT)
-                .setContent(messageText)
-                .setSenderDisplayName(senderDisplayName);
+                                                        .setType(ChatMessageType.TEXT)
+                                                        .setContent(messageText)
+                                                        .setSenderDisplayName(senderDisplayName);
         try {
             chatThreadClient.sendMessage(chatMessageOptions);
             sendMessageTextBox.setText("");
@@ -188,10 +192,10 @@ public class MainActivity extends AppCompatActivity {
         try {
             chatClientInitialized = false;
             chatClient = new ChatClientBuilder()
-                            .endpoint(acsResourceEndpoint)
-                            .credential(new CommunicationTokenCredential(acsUserToken))
-                            .addPolicy(new UserAgentPolicy(APPLICATION_ID, SDK_NAME, sdkVersion))
-                            .buildClient();
+                                .endpoint(acsResourceEndpoint)
+                                .credential(new CommunicationTokenCredential(acsUserToken))
+                                .addPolicy(new UserAgentPolicy(APPLICATION_ID, SDK_NAME, sdkVersion))
+                                .buildClient();
             Consumer<Throwable> errorHandler = throwable -> {
                 // Show a user-friendly message
                 Toast.makeText(getApplicationContext(), "Failed to start Real time notification. Please try again.", Toast.LENGTH_SHORT).show();
