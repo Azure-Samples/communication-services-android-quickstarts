@@ -22,15 +22,8 @@ allprojects {
             url 'https://skype.pkgs.visualstudio.com/_packaging/csc/maven/v1/'
 
             credentials {
-                // Property systemProp.gradle.wrapperUser and systemProp.gradle.wrapperPassword are defined on orient build machines
-                // So for builds non-orient agents, we'll be passing the credentials as command line arguments
-                if (project.hasProperty("orientBuild") && project.getProperties().get("orientBuild") == "true") {
-                    username property('systemProp.gradle.wrapperUser')
-                    password property('systemProp.gradle.wrapperPassword')
-                } else {
                     username property('gradle.wrapperUser')
                     password property('gradle.wrapperPassword')
-                }
             }
         }
     }
