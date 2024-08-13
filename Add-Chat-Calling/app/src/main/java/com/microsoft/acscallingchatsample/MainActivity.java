@@ -18,6 +18,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java9.util.function.Consumer;
 
@@ -37,6 +38,10 @@ import com.azure.android.communication.chat.models.ChatEvent;
 import com.azure.android.communication.chat.models.ChatEventType;
 import com.azure.android.communication.chat.models.ChatMessageReceivedEvent;
 import com.azure.android.communication.chat.models.ChatMessageType;
+import com.azure.android.communication.chat.models.ChatParticipant;
+import com.azure.android.communication.chat.models.ParticipantsAddedEvent;
+import com.azure.android.communication.chat.models.ParticipantsRemovedEvent;
+import com.azure.android.communication.chat.models.RealTimeNotificationCallback;
 import com.azure.android.communication.chat.models.SendChatMessageOptions;
 import com.azure.android.communication.common.CommunicationTokenCredential;
 import com.azure.android.core.http.policy.UserAgentPolicy;
@@ -50,8 +55,8 @@ public class MainActivity extends AppCompatActivity {
                                                         Manifest.permission.WRITE_EXTERNAL_STORAGE,
                                                         Manifest.permission.READ_PHONE_STATE };
     // Scope of the token should have both chat and calling
-    private static final String acsUserToken = "<ACS_TOKEN>";
-    private String acsResourceEndpoint = "https://corertc-test-apps.unitedstates.communication.azure.com";
+    private static final String acsUserToken = "<ACS_ACCESS_TOKEN>";
+    private String acsResourceEndpoint = "https://<ACS_RESOURCE>.communication.azure.com";
 
     TextView statusBar;
 
@@ -67,17 +72,17 @@ public class MainActivity extends AppCompatActivity {
     private static final String APPLICATION_ID = "ACSCallingChatSample";
     private static final String SDK_NAME = "com.azure.android:azure-communication-chat";
     private Boolean chatClientInitialized = false;
+    private RealTimeNotificationCallback newChatEventListener;
+    private RealTimeNotificationCallback participantAddedListener;
+    private RealTimeNotificationCallback participantRemovedListener;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        AndroidThreeTen.init(this);
         setContentView(R.layout.activity_main);
-
         callButton = findViewById(R.id.call_button);
 
-        getAllPermissions();
-        createAgent();
-        callButton.setOnClickListener(l -> startCall());
+        callButton.setOnClickListener(l -> joinTeamsMeeting());
 
         sendChatMessageButton = findViewById(R.id.send_button);
         sendChatMessageButton.setOnClickListener(l -> sendChatMessage());
@@ -88,8 +93,25 @@ public class MainActivity extends AppCompatActivity {
         statusBar = findViewById(R.id.status_bar);
 
         setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
+
+        initialize();
     }
 
+    /**
+     * Send the chat message to the Teams meeting that was joined.
+     */
+    private void initialize() {
+        if (acsAgent != null) {
+            return;
+        }
+        AndroidThreeTen.init(this);
+        getAllPermissions();
+        createAgent();
+    }
+
+    /**
+     * Send the chat message to the Teams meeting that was joined.
+     */
     private void sendChatMessage() {
         if (!chatClientInitialized) {
             Toast.makeText(this, "Chat is not initialized", Toast.LENGTH_SHORT).show();
@@ -111,20 +133,17 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private String getTeamsMeetingLink() {
-        EditText calleeIdView = findViewById(R.id.teams_meeting_link);
-        return calleeIdView.getText().toString();
-    }
     /**
-     * Start a teams call
+     * Join the teams meeting
      */
-    private void startCall() {
+    private void joinTeamsMeeting() {
         if (acsUserToken.startsWith("<")) {
             Toast.makeText(this, "Please enter token in source code", Toast.LENGTH_SHORT).show();
             return;
         }
 
         String calleeId = getTeamsMeetingLink();
+
         if (calleeId.isEmpty() || !calleeId.startsWith("https")) {
             Toast.makeText(this, "Please enter a valid teams meeting link", Toast.LENGTH_SHORT).show();
             return;
@@ -144,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Ends the call previously started
+     * Ends the call previously started and remove the chat event listeners
      */
     private void endCall() {
         try {
@@ -152,15 +171,21 @@ public class MainActivity extends AppCompatActivity {
             LinearLayout chatMessageWindow = findViewById(R.id.chat_messages_linear_layout);
             chatMessageWindow.removeAllViews();
             chatClient.stopRealtimeNotifications();
-            chatClient.removeEventHandler(ChatEventType.CHAT_MESSAGE_RECEIVED, null);
+            chatClient.removeEventHandler(ChatEventType.CHAT_MESSAGE_RECEIVED, newChatEventListener);
+            chatClient.removeEventHandler(ChatEventType.PARTICIPANTS_ADDED, participantAddedListener);
+            chatClient.removeEventHandler(ChatEventType.PARTICIPANTS_REMOVED, participantRemovedListener);
             chatClientInitialized = false;
+            acsAgent = null;
+            acsCall = null;
+            chatClient = null;
+            chatThreadClient = null;
         } catch (ExecutionException | InterruptedException e) {
             Toast.makeText(this, "Unable to hang up call", Toast.LENGTH_SHORT).show();
         }
     }
 
     /**
-     * Create the teams call agent
+     * Create the ACS call agent
      */
     private void createAgent() {
         try {
@@ -168,11 +193,15 @@ public class MainActivity extends AppCompatActivity {
             CallAgentOptions callAgentOptions = new CallAgentOptions();
             callAgentOptions.setDisplayName(senderDisplayName);
             acsAgent = new CallClient().createCallAgent(getApplicationContext(), credential, callAgentOptions).get();
+            Toast.makeText(getApplicationContext(), "CallAgent created.", Toast.LENGTH_SHORT).show();
         } catch (Exception ex) {
             Toast.makeText(getApplicationContext(), "Failed to create call agent.", Toast.LENGTH_SHORT).show();
         }
     }
 
+    /**
+     * Create Chat Client and attach the appropriate handlers.
+     */
     private void createChatClient() {
         System.setProperty("javax.xml.stream.XMLInputFactory", "com.ctc.wstx.stax.WstxInputFactory");
         System.setProperty("javax.xml.stream.XMLOutputFactory", "com.ctc.wstx.stax.WstxOutputFactory");
@@ -197,9 +226,8 @@ public class MainActivity extends AppCompatActivity {
             };
             chatClient.startRealtimeNotifications(getApplicationContext(), errorHandler);
 
-            // Register a listener for chatMessageReceived event
-            chatClient.addEventHandler(ChatEventType.CHAT_MESSAGE_RECEIVED, (ChatEvent payload) -> {
-                ChatMessageReceivedEvent chatMessageReceivedEvent = (ChatMessageReceivedEvent) payload;
+            newChatEventListener = chatEvent -> {
+                ChatMessageReceivedEvent chatMessageReceivedEvent = (ChatMessageReceivedEvent) chatEvent;
                 runOnUiThread(() -> {
                     LinearLayout chatMessageWindow = findViewById(R.id.chat_messages_linear_layout);
 
@@ -214,7 +242,31 @@ public class MainActivity extends AppCompatActivity {
                     ScrollView scrollView = findViewById(R.id.chat_messages_scroll_view);
                     scrollView.fullScroll(View.FOCUS_DOWN);
                 });
-            });
+            };
+
+            participantAddedListener = chatEvent -> {
+                ParticipantsAddedEvent participantsAddedEvent = (ParticipantsAddedEvent) chatEvent;
+                List<ChatParticipant> participantsAdded = participantsAddedEvent.getParticipantsAdded();
+                participantsAdded.forEach(participant ->{
+                    runOnUiThread(() -> {
+                        Toast.makeText(getApplicationContext(), "Participant added: " + participant.getDisplayName(), Toast.LENGTH_LONG).show();
+                    });
+                });
+            };
+
+            participantRemovedListener = chatEvent -> {
+                ParticipantsRemovedEvent participantsRemovedEvent = (ParticipantsRemovedEvent) chatEvent;
+                List<ChatParticipant> participantsRemoved = participantsRemovedEvent.getParticipantsRemoved();
+                participantsRemoved.forEach(participant ->{
+                    runOnUiThread(() -> {
+                        Toast.makeText(getApplicationContext(), "Participant removed: " + participant.getDisplayName(), Toast.LENGTH_LONG).show();
+                    });
+                });
+            };
+
+            chatClient.addEventHandler(ChatEventType.CHAT_MESSAGE_RECEIVED, newChatEventListener);
+            chatClient.addEventHandler(ChatEventType.PARTICIPANTS_ADDED, participantAddedListener);
+            chatClient.addEventHandler(ChatEventType.PARTICIPANTS_REMOVED, participantRemovedListener);
 
             String threadId = extractThreadIdFromMeetingLink(teamsMeetingLink);
             chatThreadClient = new ChatThreadClientBuilder()
@@ -225,17 +277,22 @@ public class MainActivity extends AppCompatActivity {
                                 .buildClient();
 
             chatClientInitialized = true;
+            runOnUiThread(() -> Toast.makeText(getApplicationContext(), "ChatClient created.", Toast.LENGTH_SHORT).show());
         } catch (Exception ex) {
-            Toast.makeText(getApplicationContext(), "Failed to start Chat client.", Toast.LENGTH_SHORT).show();
+            runOnUiThread(() -> Toast.makeText(getApplicationContext(), "Failed to start Chat client.", Toast.LENGTH_SHORT).show());
             chatClientInitialized = false;
         }
     }
 
+    /**
+     * Extract threadId from the meeting link, otherwise sending chat message fails.
+     */
     private String extractThreadIdFromMeetingLink(String meetingLink) {
         Uri uri = Uri.parse(meetingLink);
         String path = uri.getPath();
         return path.split("/")[3];
     }
+
     /**
      * Request each required permission if the app doesn't already have it.
      */
@@ -271,5 +328,13 @@ public class MainActivity extends AppCompatActivity {
      */
     private void setStatus(String status) {
         runOnUiThread(() -> statusBar.setText(status));
+    }
+
+    /**
+     * Get the the teams meeting link entered in the textbox.
+     */
+    private String getTeamsMeetingLink() {
+        EditText calleeIdView = findViewById(R.id.teams_meeting_link);
+        return calleeIdView.getText().toString();
     }
 }
