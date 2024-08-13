@@ -106,6 +106,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             chatThreadClient.sendMessage(chatMessageOptions);
             sendMessageTextBox.setText("");
+            Toast.makeText(this, "Message Sent !!", Toast.LENGTH_SHORT).show();
         } catch(Exception ex) {
             Toast.makeText(this, "Failed to send chat message !!", Toast.LENGTH_SHORT).show();
         }
