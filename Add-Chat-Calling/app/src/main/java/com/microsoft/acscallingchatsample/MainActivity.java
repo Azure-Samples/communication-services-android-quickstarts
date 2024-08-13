@@ -9,7 +9,6 @@ import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -30,10 +29,8 @@ import com.azure.android.communication.calling.Call;
 import com.azure.android.communication.calling.CallAgent;
 import com.azure.android.communication.calling.JoinCallOptions;
 import com.azure.android.communication.calling.TeamsMeetingLinkLocator;
-import com.azure.android.communication.chat.ChatAsyncClient;
 import com.azure.android.communication.chat.ChatClient;
 import com.azure.android.communication.chat.ChatClientBuilder;
-import com.azure.android.communication.chat.ChatThreadAsyncClient;
 import com.azure.android.communication.chat.ChatThreadClient;
 import com.azure.android.communication.chat.ChatThreadClientBuilder;
 import com.azure.android.communication.chat.models.ChatEvent;
@@ -44,8 +41,6 @@ import com.azure.android.communication.chat.models.SendChatMessageOptions;
 import com.azure.android.communication.common.CommunicationTokenCredential;
 import com.azure.android.core.http.policy.UserAgentPolicy;
 
-import com.azure.android.core.rest.Response;
-import com.azure.android.core.util.RequestContext;
 import com.jakewharton.threetenabp.AndroidThreeTen;
 
 public class MainActivity extends AppCompatActivity {
@@ -205,22 +200,19 @@ public class MainActivity extends AppCompatActivity {
             // Register a listener for chatMessageReceived event
             chatClient.addEventHandler(ChatEventType.CHAT_MESSAGE_RECEIVED, (ChatEvent payload) -> {
                 ChatMessageReceivedEvent chatMessageReceivedEvent = (ChatMessageReceivedEvent) payload;
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        LinearLayout chatMessageWindow = findViewById(R.id.chat_messages_linear_layout);
+                runOnUiThread(() -> {
+                    LinearLayout chatMessageWindow = findViewById(R.id.chat_messages_linear_layout);
 
-                        TextView textViewLines = new TextView(getApplicationContext());
-                        textViewLines.setText("--------");
-                        chatMessageWindow.addView(textViewLines);
+                    TextView textViewLines = new TextView(getApplicationContext());
+                    textViewLines.setText("--------");
+                    chatMessageWindow.addView(textViewLines);
 
-                        TextView textView = new TextView(getApplicationContext());
-                        textView.setText(chatMessageReceivedEvent.getSender().getRawId() + ": " + chatMessageReceivedEvent.getContent());
-                        chatMessageWindow.addView(textView);
+                    TextView textView = new TextView(getApplicationContext());
+                    textView.setText(chatMessageReceivedEvent.getSender().getRawId() + ": " + chatMessageReceivedEvent.getContent());
+                    chatMessageWindow.addView(textView);
 
-                        ScrollView scrollView = findViewById(R.id.chat_messages_scroll_view);
-                        scrollView.fullScroll(View.FOCUS_DOWN);
-                    }
+                    ScrollView scrollView = findViewById(R.id.chat_messages_scroll_view);
+                    scrollView.fullScroll(View.FOCUS_DOWN);
                 });
             });
 
