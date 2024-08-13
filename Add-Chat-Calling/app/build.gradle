@@ -40,6 +40,7 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    implementation 'com.fasterxml.woodstox:woodstox-core:7.0.0'
     //implementation 'stax:stax-api:1.0.1'
     //implementation 'com.azure.android:azure-communication-calling:2.8.0'
     implementation ('com.azure.android:azure-communication-calling:0.0.1-beta.96')

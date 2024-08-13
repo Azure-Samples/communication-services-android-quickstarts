@@ -7,11 +7,14 @@ import androidx.core.app.ActivityCompat;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -41,10 +44,14 @@ import com.azure.android.communication.chat.models.SendChatMessageOptions;
 import com.azure.android.communication.common.CommunicationTokenCredential;
 import com.azure.android.core.http.policy.UserAgentPolicy;
 
+import com.azure.android.core.rest.Response;
+import com.azure.android.core.util.RequestContext;
+import com.jakewharton.threetenabp.AndroidThreeTen;
+
 public class MainActivity extends AppCompatActivity {
     private static final String[] allPermissions = new String[] { Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_PHONE_STATE };
     // Scope of the token should have both chat and calling
-    private static final String acsUserToken = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjYwNUVCMzFEMzBBMjBEQkRBNTMxODU2MkM4QTM2RDFCMzIyMkE2MTkiLCJ4NXQiOiJZRjZ6SFRDaURiMmxNWVZpeUtOdEd6SWlwaGsiLCJ0eXAiOiJKV1QifQ.eyJza3lwZWlkIjoiYWNzOmVmZDNjMjI5LWIyMTItNDM3YS05NDVkLTkyMzI2ZjEzYTFiZV8wMDAwMDAyMS1lODg2LWFkMmItY2ViMS1hNDNhMGQwMDRhYjQiLCJzY3AiOjE3OTIsImNzaSI6IjE3MjM1MDA2NjEiLCJleHAiOjE3MjM1ODcwNjEsInJnbiI6ImFtZXIiLCJhY3NTY29wZSI6ImNoYXQsdm9pcCIsInJlc291cmNlSWQiOiJlZmQzYzIyOS1iMjEyLTQzN2EtOTQ1ZC05MjMyNmYxM2ExYmUiLCJyZXNvdXJjZUxvY2F0aW9uIjoidW5pdGVkc3RhdGVzIiwiaWF0IjoxNzIzNTAwNjYxfQ.dr9rgKjO40JusSD_VvdUs0Vfd0rxnKsimOgWWIrbOyMt48CP167a5rTT2ds6EovenNwVs7Qxwown1by_pOs6r8rDt3Uc-OU23S9ShkR2hqncREIlltG6LtVvEC7_90GkKSM8jPQGaEtlVHAv75agMOQNpOhduH_kA9If0JTchsSQgJG6tG2RYBnohdO8ooXSiWcK8ag9KhBU4QFezGYKdS0s7GZbFUzbG4Ova0TJVM3UgRJNkgKH34kj4Tsg8fCHYTdz5pUQ1WyGjoC5CakU3w1CjtD7aEWrJ1rXoDJ6NwTFsjsUz94QFSvcxjH2oaDYCQicYrBpX6-xWdscxklMZg";
+    private static final String acsUserToken = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjYwNUVCMzFEMzBBMjBEQkRBNTMxODU2MkM4QTM2RDFCMzIyMkE2MTkiLCJ4NXQiOiJZRjZ6SFRDaURiMmxNWVZpeUtOdEd6SWlwaGsiLCJ0eXAiOiJKV1QifQ.eyJza3lwZWlkIjoiYWNzOmVmZDNjMjI5LWIyMTItNDM3YS05NDVkLTkyMzI2ZjEzYTFiZV8wMDAwMDAyMS1lYTE5LWIwZjAtYjhiYS1hNDNhMGQwMDkxNTEiLCJzY3AiOjE3OTIsImNzaSI6IjE3MjM1MjcwNzMiLCJleHAiOjE3MjM2MTM0NzMsInJnbiI6ImFtZXIiLCJhY3NTY29wZSI6ImNoYXQsdm9pcCIsInJlc291cmNlSWQiOiJlZmQzYzIyOS1iMjEyLTQzN2EtOTQ1ZC05MjMyNmYxM2ExYmUiLCJyZXNvdXJjZUxvY2F0aW9uIjoidW5pdGVkc3RhdGVzIiwiaWF0IjoxNzIzNTI3MDczfQ.SqC7dj5N9QBfK-vJT30VMOT5QnARnkc-kytsEM-mS8HANAZXwJaJ7pVvWD7B7yDxDRQoZuO6SBV-2FcQGUcaBzlJUxA9rwHDUf0TuVlunfkGcpjgomzIMYTb8sAtAYlpq-5sT4kDmheahwQlh8CqmVixDyqIh5NqXPCl6sAFCsFB3srfY23oHG8VHDE9kMmp2_i9b0QoVMJ3ifAeiFFKYDAJ1VZ5qede2T8yJP0eea2wRDR2e5lOGEJQ5DwConE_j6E2PunMxeht2nWSpHQj-MOQbK_2caDQvMOCzaOvmFwNNVbuZxK96Dd92eaGduBK7G90t-QDu18wLSXJaxKKqQ";
     private String acsResourceEndpoint = "https://corertc-test-apps.unitedstates.communication.azure.com";
 
     TextView statusBar;
@@ -64,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        AndroidThreeTen.init(this);
         setContentView(R.layout.activity_main);
 
         callButton = findViewById(R.id.call_button);
@@ -90,17 +98,14 @@ public class MainActivity extends AppCompatActivity {
         }
 
         EditText sendMessageTextBox = findViewById(R.id.message_input_edit_text);
-        String messageText = sendMessageTextBox.toString();
+        String messageText = sendMessageTextBox.getText().toString();
         SendChatMessageOptions chatMessageOptions = new SendChatMessageOptions()
                 .setType(ChatMessageType.TEXT)
                 .setContent(messageText)
                 .setSenderDisplayName(senderDisplayName);
         try {
             chatThreadClient.sendMessage(chatMessageOptions);
-            LinearLayout chatMessageWindow = findViewById(R.id.chat_messages_linear_layout);
-            TextView textView = new TextView(getApplicationContext());
-            textView.setText("ME: " + messageText);
-            chatMessageWindow.addView(textView);
+            sendMessageTextBox.setText("");
         } catch(Exception ex) {
             Toast.makeText(this, "Failed to send chat message !!", Toast.LENGTH_SHORT).show();
         }
@@ -144,6 +149,10 @@ public class MainActivity extends AppCompatActivity {
     private void endCall() {
         try {
             acsCall.hangUp(new HangUpOptions()).get();
+            LinearLayout chatMessageWindow = findViewById(R.id.chat_messages_linear_layout);
+            chatMessageWindow.removeAllViews();
+            chatClient.stopRealtimeNotifications();
+            chatClient.removeEventHandler(ChatEventType.CHAT_MESSAGE_RECEIVED, null);
             chatClientInitialized = false;
         } catch (ExecutionException | InterruptedException e) {
             Toast.makeText(this, "Unable to hang up call", Toast.LENGTH_SHORT).show();
@@ -165,6 +174,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void createChatClient() {
+        System.setProperty("javax.xml.stream.XMLInputFactory", "com.ctc.wstx.stax.WstxInputFactory");
+        System.setProperty("javax.xml.stream.XMLOutputFactory", "com.ctc.wstx.stax.WstxOutputFactory");
+        System.setProperty("javax.xml.stream.XMLEventFactory", "com.ctc.wstx.stax.WstxEventFactory");
+
         if (acsCall.getState() != CallState.CONNECTED) {
             Toast.makeText(getApplicationContext(), "Call state needs to be connected state.", Toast.LENGTH_SHORT).show();
             return;
@@ -187,17 +200,31 @@ public class MainActivity extends AppCompatActivity {
             // Register a listener for chatMessageReceived event
             chatClient.addEventHandler(ChatEventType.CHAT_MESSAGE_RECEIVED, (ChatEvent payload) -> {
                 ChatMessageReceivedEvent chatMessageReceivedEvent = (ChatMessageReceivedEvent) payload;
-                LinearLayout chatMessageWindow = findViewById(R.id.chat_messages_linear_layout);
-                TextView textView = new TextView(getApplicationContext());
-                textView.setText(chatMessageReceivedEvent.getSender().getRawId() + ": " + chatMessageReceivedEvent.getContent());
-                chatMessageWindow.addView(textView);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        LinearLayout chatMessageWindow = findViewById(R.id.chat_messages_linear_layout);
+
+                        TextView textViewLines = new TextView(getApplicationContext());
+                        textViewLines.setText("--------");
+                        chatMessageWindow.addView(textViewLines);
+
+                        TextView textView = new TextView(getApplicationContext());
+                        textView.setText(chatMessageReceivedEvent.getSender().getRawId() + ": " + chatMessageReceivedEvent.getContent());
+                        chatMessageWindow.addView(textView);
+
+                        ScrollView scrollView = findViewById(R.id.chat_messages_scroll_view);
+                        scrollView.fullScroll(View.FOCUS_DOWN);
+                    }
+                });
             });
 
+            String threadId = extractThreadIdFromMeetingLink(teamsMeetingLink);
             chatThreadClient = new ChatThreadClientBuilder()
                                 .endpoint(acsResourceEndpoint)
                                 .credential(new CommunicationTokenCredential(acsUserToken))
                                 .addPolicy(new UserAgentPolicy(APPLICATION_ID, SDK_NAME, sdkVersion))
-                                .chatThreadId(teamsMeetingLink)
+                                .chatThreadId(threadId)
                                 .buildClient();
 
             chatClientInitialized = true;
@@ -207,6 +234,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private String extractThreadIdFromMeetingLink(String meetingLink) {
+        Uri uri = Uri.parse(meetingLink);
+        String path = uri.getPath();
+        return path.split("/")[3];
+    }
     /**
      * Request each required permission if the app doesn't already have it.
      */
