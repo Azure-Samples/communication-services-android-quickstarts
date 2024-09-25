@@ -94,6 +94,8 @@ public class MainActivity extends AppCompatActivity {
 
         setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
 
+        EditText calleeIdView = findViewById(R.id.teams_meeting_link);
+        calleeIdView.setText(teamsMeetingLink);
         initialize();
     }
 
@@ -137,6 +139,11 @@ public class MainActivity extends AppCompatActivity {
      * Join the teams meeting
      */
     private void joinTeamsMeeting() {
+        if (acsAgent == null) {
+            Toast.makeText(this, "CallAgent is null", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         if (acsUserToken.startsWith("<")) {
             Toast.makeText(this, "Please enter token in source code", Toast.LENGTH_SHORT).show();
             return;
@@ -175,7 +182,6 @@ public class MainActivity extends AppCompatActivity {
             chatClient.removeEventHandler(ChatEventType.PARTICIPANTS_ADDED, participantAddedListener);
             chatClient.removeEventHandler(ChatEventType.PARTICIPANTS_REMOVED, participantRemovedListener);
             chatClientInitialized = false;
-            acsAgent = null;
             acsCall = null;
             chatClient = null;
             chatThreadClient = null;
