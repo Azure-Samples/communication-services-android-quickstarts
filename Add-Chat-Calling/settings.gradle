@@ -1,0 +1,14 @@
+pluginManagement {
+    repositories {
+        // not compliant for use on build machines (internet disabled there)
+        if (System.getenv('BUILD_BUILDID') == null) {
+            gradlePluginPortal()
+            mavenCentral()
+            google()
+            jcenter()
+        }
+    }
+}
+
+include ':app'
+rootProject.name = "AcsCallingChatSample"
