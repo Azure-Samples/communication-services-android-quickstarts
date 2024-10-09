@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
     // Scope of the token should have both chat and calling
     private static final String acsUserToken = "<ACS_ACCESS_TOKEN>";
     private String acsResourceEndpoint = "https://<ACS_RESOURCE>.communication.azure.com";
+    private String teamsMeetingLink = "<TEAMS_MEETING_LINK>";
 
     TextView statusBar;
 
@@ -163,7 +164,9 @@ public class MainActivity extends AppCompatActivity {
                     {
                         CallState callState = acsCall.getState();
                         if (callState == CallState.CONNECTED) {
-                            new Thread(() -> createChatClient()).start();
+                            runOnUiThread(() -> {
+                                createChatClient();
+                            });
                         }
                         setStatus(acsCall.getState().toString());
                     });
@@ -209,10 +212,6 @@ public class MainActivity extends AppCompatActivity {
      * Create Chat Client and attach the appropriate handlers.
      */
     private void createChatClient() {
-        System.setProperty("javax.xml.stream.XMLInputFactory", "com.ctc.wstx.stax.WstxInputFactory");
-        System.setProperty("javax.xml.stream.XMLOutputFactory", "com.ctc.wstx.stax.WstxOutputFactory");
-        System.setProperty("javax.xml.stream.XMLEventFactory", "com.ctc.wstx.stax.WstxEventFactory");
-
         if (acsCall.getState() != CallState.CONNECTED) {
             Toast.makeText(getApplicationContext(), "Call state needs to be connected state.", Toast.LENGTH_SHORT).show();
             return;
