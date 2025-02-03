@@ -4,12 +4,12 @@ plugins {
 }
 
 android {
-    compileSdk 33
+    compileSdk 35
 
     defaultConfig {
         applicationId "com.example.uilibraryquickstart"
-        minSdk 31
-        targetSdk 33
+        minSdk 26
+        targetSdk 35
         versionCode 1
         versionName "1.0"
 
@@ -32,10 +32,11 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
+    namespace 'com.example.uilibraryquickstart'
 }
 
 dependencies {
-    implementation 'com.azure.android:azure-communication-ui-calling:1.4.0'
+    implementation 'com.azure.android:azure-communication-ui-calling:1.13.0'
     implementation 'androidx.core:core-ktx:1.6.0'
     implementation 'androidx.appcompat:appcompat:1.3.1'
     implementation 'com.google.android.material:material:1.4.0'

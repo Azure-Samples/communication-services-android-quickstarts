@@ -9,7 +9,6 @@ import com.azure.android.communication.ui.calling.CallComposite
 import com.azure.android.communication.ui.calling.CallCompositeBuilder
 import com.azure.android.communication.ui.calling.models.CallCompositeGroupCallLocator
 import com.azure.android.communication.ui.calling.models.CallCompositeJoinLocator
-import com.azure.android.communication.ui.calling.models.CallCompositeRemoteOptions
 import java.util.UUID
 
 class MainActivity : AppCompatActivity() {
@@ -18,7 +17,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         val startButton: Button = findViewById(R.id.startButton)
-        startButton.setOnClickListener { l -> startCallComposite() }
+        startButton.setOnClickListener { startCallComposite() }
     }
 
     private fun startCallComposite() {
@@ -26,13 +25,16 @@ class MainActivity : AppCompatActivity() {
         val communicationTokenCredential = CommunicationTokenCredential(communicationTokenRefreshOptions)
 
         val locator: CallCompositeJoinLocator = CallCompositeGroupCallLocator(UUID.fromString("GROUP_CALL_ID"))
-        val remoteOptions = CallCompositeRemoteOptions(locator, communicationTokenCredential, "DISPLAY_NAME")
 
-        val callComposite: CallComposite = CallCompositeBuilder().build()
-        callComposite.launch(this, remoteOptions)
+        val callComposite: CallComposite = CallCompositeBuilder()
+            .credential(communicationTokenCredential)
+            .displayName("DISPLAY_NAME")
+            .build()
+
+        callComposite.launch(this, locator)
     }
 
-    private fun fetchToken(): String? {
+    private fun fetchToken(): String {
         return "USER_ACCESS_TOKEN"
     }
 }

@@ -33,11 +33,12 @@ public class MainActivity extends AppCompatActivity {
                 new CommunicationTokenCredential(communicationTokenRefreshOptions);
 
         final CallCompositeJoinLocator locator = new CallCompositeGroupCallLocator(UUID.fromString("GROUP_CALL_ID"));
-        final CallCompositeRemoteOptions remoteOptions =
-                new CallCompositeRemoteOptions(locator, communicationTokenCredential, "DISPLAY_NAME");
 
-        CallComposite callComposite = new CallCompositeBuilder().build();
-        callComposite.launch(this, remoteOptions);
+        CallComposite callComposite = new CallCompositeBuilder()
+                .credential(communicationTokenCredential)
+                .displayName("DISPLAY_NAME")
+                .build();
+        callComposite.launch(this, locator);
     }
 
     private String fetchToken() {
