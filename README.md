@@ -28,3 +28,5 @@ Azure Communication Services enable developers to add communication capabilities
 
 ### UI Libraries
 1. [Getting Started with the UI Libraries](https://learn.microsoft.com/en-us/azure/communication-services/quickstarts/ui-library/get-started-composites?tabs=kotlin&pivots=platform-android)
+
+The Java and Kotlin `ui-calling` samples use Calling UI Library **2.0.0 GA** from Maven Central, which resolves native Calling SDK **3.0.0**. Build with JDK 17 and the included Gradle wrapper; the Kotlin sample uses Kotlin 1.8.22. Keep the configured public Duo SDK feed for Fluent UI dependencies.
